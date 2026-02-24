@@ -1,0 +1,72 @@
+# Cloud Build configuration for GCP Cloud Run deployment
+# Project: halobotic
+
+steps:
+  # Step 1: Build the Docker image
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'build'
+      - '-t'
+      - 'gcr.io/halobotic/pdf-rag-system:latest'
+      - '-t'
+      - 'gcr.io/halobotic/pdf-rag-system:$BUILD_ID'
+      - '--cache-from'
+      - 'gcr.io/halobotic/pdf-rag-system:latest'
+      - '.'
+    timeout: '1800s'
+
+  # Step 2: Push the latest tag
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'push'
+      - 'gcr.io/halobotic/pdf-rag-system:latest'
+
+  # Step 3: Push the build-specific tag
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'push'
+      - 'gcr.io/halobotic/pdf-rag-system:$BUILD_ID'
+
+  # Step 4: Deploy to Cloud Run
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: gcloud
+    args:
+      - 'run'
+      - 'deploy'
+      - '$_SERVICE_NAME'
+      - '--image=gcr.io/halobotic/pdf-rag-system:$BUILD_ID'
+      - '--region=$_REGION'
+      - '--platform=managed'
+      - '--allow-unauthenticated'
+      - '--memory=4Gi'
+      - '--cpu=2'
+      - '--timeout=300s'
+      - '--max-instances=10'
+      - '--min-instances=0'
+      - '--concurrency=80'
+      - '--port=8080'
+      - '--set-env-vars=LOG_LEVEL=INFO,API_TITLE=PDF RAG System,API_VERSION=1.2.0'
+      - '--set-env-vars=CHUNK_SIZE=512,CHUNK_OVERLAP=50,MAX_FILE_SIZE=52428800'
+      - '--set-env-vars=ENABLE_MULTIMODAL_CHUNKING=true,USE_RAG_ANYTHING=true'
+      - '--set-env-vars=VECTOR_DB_PATH=/data/vectordb,UPLOAD_DIR=/data/uploads'
+      - '--set-env-vars=TEXT_COLLECTION=text_chunks,VISUAL_COLLECTION=visual_chunks,MULTIMODAL_COLLECTION=multimodal_chunks'
+      - '--set-secrets=OPENAI_API_KEY=openai-api-key:latest'
+
+# Images to be pushed to Container Registry
+images:
+  - 'gcr.io/halobotic/pdf-rag-system:latest'
+  - 'gcr.io/halobotic/pdf-rag-system:$BUILD_ID'
+
+# Build timeout
+timeout: '2400s'
+
+# Machine type for build
+options:
+  machineType: 'E2_HIGHCPU_8'
+  logging: CLOUD_LOGGING_ONLY
+  dynamicSubstitutions: true
+
+# Substitutions for variables
+substitutions:
+  _SERVICE_NAME: 'pdf-rag-system'
+  _REGION: 'europe-central2'
