@@ -242,7 +242,7 @@ To jest najważniejsza część! Tutaj dzieje się magia z wszystkimi enhancemen
 
 ```bash
 # === LLM Settings ===
-OPENAI_API_KEY=sk-your-key-here
+OPENAI_API_KEY=your-openai-api-key-here
 OPENAI_MODEL=gpt-4o-mini
 OPENAI_EMBEDDING_MODEL=text-embedding-3-small
 

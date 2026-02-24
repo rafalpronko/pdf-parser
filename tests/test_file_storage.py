@@ -26,7 +26,7 @@ class TestFileStorageService:
         from app.config import Settings
         
         settings = Settings(
-            openai_api_key="sk-test-key-for-testing",
+            openai_api_key="sk-proj-test-fake-key-for-unit-tests-only-1234567890abcdef",
             upload_dir=temp_upload_dir,
         )
         
@@ -215,7 +215,7 @@ class TestFileValidationProperties:
         from app.config import Settings
         
         settings = Settings(
-            openai_api_key="sk-test-key-for-testing",
+            openai_api_key="sk-proj-test-fake-key-for-unit-tests-only-1234567890abcdef",
             upload_dir=temp_upload_dir,
         )
         

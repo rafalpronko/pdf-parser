@@ -16,13 +16,13 @@ class TestSettingsValidation:
     def test_settings_with_valid_config(self, monkeypatch):
         """Test that settings load correctly with valid configuration."""
         # Set required environment variables
-        monkeypatch.setenv("OPENAI_API_KEY", "sk-test-key-123456789")
+        monkeypatch.setenv("OPENAI_API_KEY", "sk-proj-test-fake-key-for-unit-tests-only-1234567890abcdef")
         monkeypatch.setenv("CHUNK_SIZE", "512")
         monkeypatch.setenv("CHUNK_OVERLAP", "50")
 
         settings = Settings()
 
-        assert settings.openai_api_key == "sk-test-key-123456789"
+        assert settings.openai_api_key == "sk-proj-test-fake-key-for-unit-tests-only-1234567890abcdef"
         assert settings.chunk_size == 512
         assert settings.chunk_overlap == 50
         assert settings.openai_model == "gpt-4o-mini"
@@ -61,7 +61,7 @@ class TestSettingsValidation:
 
     def test_settings_invalid_chunk_size(self, monkeypatch):
         """Test that invalid chunk size raises validation error."""
-        monkeypatch.setenv("OPENAI_API_KEY", "sk-test-key-123456789")
+        monkeypatch.setenv("OPENAI_API_KEY", "sk-proj-test-fake-key-for-unit-tests-only-1234567890abcdef")
         monkeypatch.setenv("CHUNK_SIZE", "50")  # Too small
 
         with pytest.raises(ValidationError) as exc_info:
@@ -71,7 +71,7 @@ class TestSettingsValidation:
 
     def test_settings_chunk_overlap_greater_than_size(self, monkeypatch):
         """Test that chunk overlap >= chunk size raises validation error."""
-        monkeypatch.setenv("OPENAI_API_KEY", "sk-test-key-123456789")
+        monkeypatch.setenv("OPENAI_API_KEY", "sk-proj-test-fake-key-for-unit-tests-only-1234567890abcdef")
         monkeypatch.setenv("CHUNK_SIZE", "200")  # Small chunk size
         monkeypatch.setenv("CHUNK_OVERLAP", "200")  # Equal to chunk size
 
@@ -83,7 +83,7 @@ class TestSettingsValidation:
 
     def test_settings_invalid_log_level(self, monkeypatch):
         """Test that invalid log level raises validation error."""
-        monkeypatch.setenv("OPENAI_API_KEY", "sk-test-key-123456789")
+        monkeypatch.setenv("OPENAI_API_KEY", "sk-proj-test-fake-key-for-unit-tests-only-1234567890abcdef")
         monkeypatch.setenv("LOG_LEVEL", "INVALID")
 
         with pytest.raises(ValidationError) as exc_info:
@@ -93,7 +93,7 @@ class TestSettingsValidation:
 
     def test_settings_log_level_case_insensitive(self, monkeypatch):
         """Test that log level is case insensitive."""
-        monkeypatch.setenv("OPENAI_API_KEY", "sk-test-key-123456789")
+        monkeypatch.setenv("OPENAI_API_KEY", "sk-proj-test-fake-key-for-unit-tests-only-1234567890abcdef")
         monkeypatch.setenv("LOG_LEVEL", "debug")
 
         settings = Settings()
@@ -102,7 +102,7 @@ class TestSettingsValidation:
 
     def test_settings_creates_directories(self, monkeypatch, tmp_path):
         """Test that settings creates required directories."""
-        monkeypatch.setenv("OPENAI_API_KEY", "sk-test-key-123456789")
+        monkeypatch.setenv("OPENAI_API_KEY", "sk-proj-test-fake-key-for-unit-tests-only-1234567890abcdef")
         upload_dir = tmp_path / "uploads"
         vector_db_dir = tmp_path / "vectordb"
         monkeypatch.setenv("UPLOAD_DIR", str(upload_dir))
@@ -115,7 +115,7 @@ class TestSettingsValidation:
 
     def test_settings_default_values(self, monkeypatch):
         """Test that default values are set correctly."""
-        monkeypatch.setenv("OPENAI_API_KEY", "sk-test-key-123456789")
+        monkeypatch.setenv("OPENAI_API_KEY", "sk-proj-test-fake-key-for-unit-tests-only-1234567890abcdef")
 
         settings = Settings()
 
@@ -131,7 +131,7 @@ class TestSettingsValidation:
 
     def test_get_settings_singleton(self, monkeypatch):
         """Test that get_settings returns the same instance."""
-        monkeypatch.setenv("OPENAI_API_KEY", "sk-test-key-123456789")
+        monkeypatch.setenv("OPENAI_API_KEY", "sk-proj-test-fake-key-for-unit-tests-only-1234567890abcdef")
 
         # Clear the global settings first
         import app.config
@@ -144,7 +144,7 @@ class TestSettingsValidation:
 
     def test_reload_settings(self, monkeypatch):
         """Test that reload_settings creates a new instance."""
-        monkeypatch.setenv("OPENAI_API_KEY", "sk-test-key-123456789")
+        monkeypatch.setenv("OPENAI_API_KEY", "sk-proj-test-fake-key-for-unit-tests-only-1234567890abcdef")
         monkeypatch.setenv("CHUNK_SIZE", "512")
 
         settings1 = reload_settings()
@@ -184,7 +184,7 @@ class TestConfigurationProperties:
         
         This test verifies that invalid chunk sizes (below minimum of 100) are rejected.
         """
-        monkeypatch.setenv("OPENAI_API_KEY", "sk-test-key-123456789")
+        monkeypatch.setenv("OPENAI_API_KEY", "sk-proj-test-fake-key-for-unit-tests-only-1234567890abcdef")
         monkeypatch.setenv("CHUNK_SIZE", str(chunk_size))
 
         with pytest.raises(ValidationError) as exc_info:
@@ -212,7 +212,7 @@ class TestConfigurationProperties:
         
         Validates: Requirements 6.4
         """
-        monkeypatch.setenv("OPENAI_API_KEY", "sk-test-key-123456789")
+        monkeypatch.setenv("OPENAI_API_KEY", "sk-proj-test-fake-key-for-unit-tests-only-1234567890abcdef")
         monkeypatch.setenv("CHUNK_SIZE", str(chunk_size))
 
         with pytest.raises(ValidationError) as exc_info:
@@ -270,7 +270,7 @@ class TestConfigurationProperties:
         
         Validates: Requirements 6.4
         """
-        monkeypatch.setenv("OPENAI_API_KEY", "sk-test-key-123456789")
+        monkeypatch.setenv("OPENAI_API_KEY", "sk-proj-test-fake-key-for-unit-tests-only-1234567890abcdef")
         monkeypatch.setenv("CHUNK_OVERLAP", str(chunk_overlap))
 
         with pytest.raises(ValidationError) as exc_info:
@@ -302,7 +302,7 @@ class TestConfigurationProperties:
         if chunk_overlap < chunk_size:
             pytest.skip("Only testing cases where overlap >= size")
 
-        monkeypatch.setenv("OPENAI_API_KEY", "sk-test-key-123456789")
+        monkeypatch.setenv("OPENAI_API_KEY", "sk-proj-test-fake-key-for-unit-tests-only-1234567890abcdef")
         monkeypatch.setenv("CHUNK_SIZE", str(chunk_size))
         monkeypatch.setenv("CHUNK_OVERLAP", str(chunk_overlap))
 
@@ -337,7 +337,7 @@ class TestConfigurationProperties:
         
         Validates: Requirements 6.4
         """
-        monkeypatch.setenv("OPENAI_API_KEY", "sk-test-key-123456789")
+        monkeypatch.setenv("OPENAI_API_KEY", "sk-proj-test-fake-key-for-unit-tests-only-1234567890abcdef")
         monkeypatch.setenv("LOG_LEVEL", log_level)
 
         with pytest.raises(ValidationError) as exc_info:
@@ -374,7 +374,7 @@ class TestConfigurationProperties:
         if chunk_overlap >= chunk_size:
             chunk_overlap = chunk_size - 1
 
-        monkeypatch.setenv("OPENAI_API_KEY", "sk-test-key-123456789")
+        monkeypatch.setenv("OPENAI_API_KEY", "sk-proj-test-fake-key-for-unit-tests-only-1234567890abcdef")
         monkeypatch.setenv("CHUNK_SIZE", str(chunk_size))
         monkeypatch.setenv("CHUNK_OVERLAP", str(chunk_overlap))
         monkeypatch.setenv("MAX_FILE_SIZE", str(max_file_size))
@@ -445,7 +445,7 @@ class TestConfigurationProperties:
         This test verifies that string configuration values are correctly loaded
         from environment variables without type conversion issues.
         """
-        monkeypatch.setenv("OPENAI_API_KEY", "sk-test-key-123456789")
+        monkeypatch.setenv("OPENAI_API_KEY", "sk-proj-test-fake-key-for-unit-tests-only-1234567890abcdef")
         monkeypatch.setenv("API_TITLE", api_title)
         monkeypatch.setenv("API_VERSION", api_version)
         monkeypatch.setenv("TEXT_COLLECTION", text_collection)
@@ -487,7 +487,7 @@ class TestConfigurationProperties:
         
         Validates: Requirements 7.5
         """
-        monkeypatch.setenv("OPENAI_API_KEY", "sk-test-key-123456789")
+        monkeypatch.setenv("OPENAI_API_KEY", "sk-proj-test-fake-key-for-unit-tests-only-1234567890abcdef")
         monkeypatch.setenv("LOG_LEVEL", log_level)
         
         # Use tmp_path to avoid creating directories in the project
@@ -529,7 +529,7 @@ class TestConfigurationProperties:
         
         Validates: Requirements 7.5
         """
-        monkeypatch.setenv("OPENAI_API_KEY", "sk-test-key-123456789")
+        monkeypatch.setenv("OPENAI_API_KEY", "sk-proj-test-fake-key-for-unit-tests-only-1234567890abcdef")
         
         # Use tmp_path to create a valid directory path
         upload_dir = tmp_path / upload_dir_str

@@ -35,7 +35,7 @@ def test_property_23_invalid_config_fails_at_startup(
     Validates: Requirements 6.4
     """
     # Set environment variables
-    os.environ["OPENAI_API_KEY"] = "sk-test123456789"
+    os.environ["OPENAI_API_KEY"] = "sk-proj-test-fake-key-for-unit-tests-only-1234567890abcdef"
     os.environ["CHUNK_SIZE"] = str(chunk_size)
     os.environ["CHUNK_OVERLAP"] = str(chunk_overlap)
     
@@ -97,7 +97,7 @@ def test_property_24_environment_variable_loading(
     Validates: Requirements 7.5
     """
     # Set required environment variables
-    os.environ["OPENAI_API_KEY"] = "sk-test123456789"
+    os.environ["OPENAI_API_KEY"] = "sk-proj-test-fake-key-for-unit-tests-only-1234567890abcdef"
     os.environ["API_TITLE"] = api_title
     os.environ["API_VERSION"] = api_version
     os.environ["CHUNK_SIZE"] = str(chunk_size)
@@ -146,7 +146,7 @@ def test_property_23_invalid_api_key_format_fails(monkeypatch):
 
 def test_property_24_log_level_conversion(monkeypatch):
     """Property 24: Log level should be converted to uppercase."""
-    monkeypatch.setenv("OPENAI_API_KEY", "sk-test123456789")
+    monkeypatch.setenv("OPENAI_API_KEY", "sk-proj-test-fake-key-for-unit-tests-only-1234567890abcdef")
     monkeypatch.setenv("LOG_LEVEL", "debug")
     
     config = Settings()
@@ -156,7 +156,7 @@ def test_property_24_log_level_conversion(monkeypatch):
 
 def test_property_23_invalid_log_level_fails(monkeypatch):
     """Property 23: Invalid log level should fail at startup."""
-    monkeypatch.setenv("OPENAI_API_KEY", "sk-test123456789")
+    monkeypatch.setenv("OPENAI_API_KEY", "sk-proj-test-fake-key-for-unit-tests-only-1234567890abcdef")
     monkeypatch.setenv("LOG_LEVEL", "INVALID_LEVEL")
     
     with pytest.raises(ValidationError) as exc_info:
@@ -167,7 +167,7 @@ def test_property_23_invalid_log_level_fails(monkeypatch):
 
 def test_property_24_path_conversion(monkeypatch, tmp_path):
     """Property 24: String paths should be converted to Path objects."""
-    monkeypatch.setenv("OPENAI_API_KEY", "sk-test123456789")
+    monkeypatch.setenv("OPENAI_API_KEY", "sk-proj-test-fake-key-for-unit-tests-only-1234567890abcdef")
     upload_path = str(tmp_path / "test_uploads")
     monkeypatch.setenv("UPLOAD_DIR", upload_path)
     
@@ -180,7 +180,7 @@ def test_property_24_path_conversion(monkeypatch, tmp_path):
 
 def test_property_23_chunk_overlap_greater_than_size_fails(monkeypatch):
     """Property 23: Chunk overlap >= chunk size should fail."""
-    monkeypatch.setenv("OPENAI_API_KEY", "sk-test123456789")
+    monkeypatch.setenv("OPENAI_API_KEY", "sk-proj-test-fake-key-for-unit-tests-only-1234567890abcdef")
     monkeypatch.setenv("CHUNK_SIZE", "500")
     monkeypatch.setenv("CHUNK_OVERLAP", "500")
     

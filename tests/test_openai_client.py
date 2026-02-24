@@ -18,7 +18,7 @@ def mock_openai_client():
 async def test_openai_client_initialization():
     """Test OpenAI client initialization."""
     client = OpenAIClient(
-        api_key="sk-test123",
+        api_key="test-fake-api-key-for-unit-tests",
         model="gpt-4o-mini",
         embedding_model="text-embedding-3-small",
         timeout=30.0,
@@ -43,7 +43,7 @@ async def test_embed_text_success(mock_openai_client):
     mock_openai_client.return_value = mock_instance
     
     # Test
-    client = OpenAIClient(api_key="sk-test123")
+    client = OpenAIClient(api_key="test-fake-api-key-for-unit-tests")
     result = await client.embed_text("test text")
     
     assert result == [0.1, 0.2, 0.3]
@@ -65,7 +65,7 @@ async def test_embed_batch_success(mock_openai_client):
     mock_openai_client.return_value = mock_instance
     
     # Test
-    client = OpenAIClient(api_key="sk-test123")
+    client = OpenAIClient(api_key="test-fake-api-key-for-unit-tests")
     result = await client.embed_batch(["text1", "text2"])
     
     assert result == [[0.1, 0.2], [0.3, 0.4]]
@@ -78,7 +78,7 @@ async def test_embed_batch_empty_list(mock_openai_client):
     mock_instance = AsyncMock()
     mock_openai_client.return_value = mock_instance
     
-    client = OpenAIClient(api_key="sk-test123")
+    client = OpenAIClient(api_key="test-fake-api-key-for-unit-tests")
     result = await client.embed_batch([])
     
     assert result == []
@@ -97,7 +97,7 @@ async def test_generate_success(mock_openai_client):
     mock_openai_client.return_value = mock_instance
     
     # Test
-    client = OpenAIClient(api_key="sk-test123")
+    client = OpenAIClient(api_key="test-fake-api-key-for-unit-tests")
     result = await client.generate("test prompt")
     
     assert result == "Generated response"
@@ -116,7 +116,7 @@ async def test_generate_with_system_message(mock_openai_client):
     mock_openai_client.return_value = mock_instance
     
     # Test
-    client = OpenAIClient(api_key="sk-test123")
+    client = OpenAIClient(api_key="test-fake-api-key-for-unit-tests")
     result = await client.generate(
         "test prompt",
         system_message="You are a helpful assistant"
@@ -144,7 +144,7 @@ async def test_generate_with_context(mock_openai_client):
     mock_openai_client.return_value = mock_instance
     
     # Test
-    client = OpenAIClient(api_key="sk-test123")
+    client = OpenAIClient(api_key="test-fake-api-key-for-unit-tests")
     result = await client.generate_with_context(
         question="What is X?",
         context="X is a thing."
@@ -180,7 +180,7 @@ async def test_retry_with_backoff_success_after_retry(mock_openai_client):
     mock_openai_client.return_value = mock_instance
     
     # Test
-    client = OpenAIClient(api_key="sk-test123", max_retries=3)
+    client = OpenAIClient(api_key="test-fake-api-key-for-unit-tests", max_retries=3)
     result = await client.embed_text("test text")
     
     assert result == [0.1, 0.2, 0.3]
@@ -201,7 +201,7 @@ async def test_retry_with_backoff_all_retries_fail(mock_openai_client):
     mock_openai_client.return_value = mock_instance
     
     # Test
-    client = OpenAIClient(api_key="sk-test123", max_retries=3)
+    client = OpenAIClient(api_key="test-fake-api-key-for-unit-tests", max_retries=3)
     
     with pytest.raises(APIError):
         await client.embed_text("test text")
@@ -220,7 +220,7 @@ async def test_retry_with_timeout_error(mock_openai_client):
     mock_openai_client.return_value = mock_instance
     
     # Test
-    client = OpenAIClient(api_key="sk-test123", max_retries=2)
+    client = OpenAIClient(api_key="test-fake-api-key-for-unit-tests", max_retries=2)
     
     with pytest.raises(APITimeoutError):
         await client.embed_text("test text")
@@ -254,7 +254,7 @@ async def test_retry_with_rate_limit_error(mock_openai_client):
     mock_openai_client.return_value = mock_instance
     
     # Test
-    client = OpenAIClient(api_key="sk-test123", max_retries=3)
+    client = OpenAIClient(api_key="test-fake-api-key-for-unit-tests", max_retries=3)
     result = await client.embed_text("test text")
     
     assert result == [0.1, 0.2, 0.3]
@@ -268,7 +268,7 @@ async def test_context_manager(mock_openai_client):
     mock_instance.close = AsyncMock()
     mock_openai_client.return_value = mock_instance
     
-    async with OpenAIClient(api_key="sk-test123") as client:
+    async with OpenAIClient(api_key="test-fake-api-key-for-unit-tests") as client:
         assert client is not None
     
     mock_instance.close.assert_called_once()
@@ -330,7 +330,7 @@ class TestEmbeddingDimensionalityConsistency:
         mock_openai_client.return_value = mock_instance
         
         # Test
-        client = OpenAIClient(api_key="sk-test123")
+        client = OpenAIClient(api_key="test-fake-api-key-for-unit-tests")
         result = await client.embed_batch(texts)
         
         # Property 1: All embeddings should have the same dimensionality
@@ -379,7 +379,7 @@ class TestEmbeddingDimensionalityConsistency:
         mock_openai_client.return_value = mock_instance
         
         # Test
-        client = OpenAIClient(api_key="sk-test123")
+        client = OpenAIClient(api_key="test-fake-api-key-for-unit-tests")
         result = await client.embed_text(text)
         
         # Property: Embedding should have correct dimensionality
@@ -428,7 +428,7 @@ class TestRetryWithExponentialBackoff:
         mock_openai_client.return_value = mock_instance
         
         # Test with timing
-        client = OpenAIClient(api_key="sk-test123", max_retries=max_retries)
+        client = OpenAIClient(api_key="test-fake-api-key-for-unit-tests", max_retries=max_retries)
         
         start_time = time.time()
         result = await client.embed_text("test text")
@@ -477,7 +477,7 @@ class TestRetryWithExponentialBackoff:
         mock_openai_client.return_value = mock_instance
         
         # Test
-        client = OpenAIClient(api_key="sk-test123", max_retries=max_retries)
+        client = OpenAIClient(api_key="test-fake-api-key-for-unit-tests", max_retries=max_retries)
         
         with pytest.raises(APIError):
             await client.embed_text("test text")
@@ -527,7 +527,7 @@ class TestRetryWithExponentialBackoff:
         mock_openai_client.return_value = mock_instance
         
         # Test
-        client = OpenAIClient(api_key="sk-test123", max_retries=3)
+        client = OpenAIClient(api_key="test-fake-api-key-for-unit-tests", max_retries=3)
         result = await client.embed_text("test text")
         
         # Property: Should succeed after retries regardless of error type
@@ -570,7 +570,7 @@ class TestTimeoutHandling:
         mock_openai_client.return_value = mock_instance
         
         # Test
-        client = OpenAIClient(api_key="sk-test123", timeout=timeout, max_retries=2)
+        client = OpenAIClient(api_key="test-fake-api-key-for-unit-tests", timeout=timeout, max_retries=2)
         
         # Property: Should raise APITimeoutError that can be caught
         with pytest.raises(APITimeoutError) as exc_info:
@@ -613,7 +613,7 @@ class TestTimeoutHandling:
         mock_openai_client.return_value = mock_instance
         
         # Test
-        client = OpenAIClient(api_key="sk-test123", max_retries=1)
+        client = OpenAIClient(api_key="test-fake-api-key-for-unit-tests", max_retries=1)
         
         # Property: All operations should handle timeouts
         with pytest.raises(APITimeoutError):
@@ -657,7 +657,7 @@ class TestTimeoutHandling:
         mock_openai_client.return_value = mock_instance
         
         # Test
-        client = OpenAIClient(api_key="sk-test123", max_retries=max_retries)
+        client = OpenAIClient(api_key="test-fake-api-key-for-unit-tests", max_retries=max_retries)
         
         with pytest.raises(APITimeoutError):
             await client.embed_text("test text")
@@ -695,7 +695,7 @@ class TestTimeoutHandling:
         mock_openai_client.return_value = mock_instance
         
         # Test
-        client = OpenAIClient(api_key="sk-test123", max_retries=3)
+        client = OpenAIClient(api_key="test-fake-api-key-for-unit-tests", max_retries=3)
         result = await client.embed_text("test text")
         
         # Property: Should recover and return result

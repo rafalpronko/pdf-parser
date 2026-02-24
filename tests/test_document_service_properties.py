@@ -88,7 +88,7 @@ def document_service(mock_dependencies, monkeypatch):
     mock_settings = MagicMock(spec=Settings)
     mock_settings.chunk_size = 512
     mock_settings.chunk_overlap = 50
-    mock_settings.openai_api_key = "sk-test-key"
+    mock_settings.openai_api_key = "sk-proj-test-fake-key-for-unit-tests-only-1234567890abcdef"
     mock_settings.openai_model = "gpt-4o-mini"
     mock_settings.openai_embedding_model = "text-embedding-3-small"
     mock_settings.vector_db_path = "./data/vectordb"
