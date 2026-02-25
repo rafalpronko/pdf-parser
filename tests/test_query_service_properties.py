@@ -7,8 +7,8 @@ from hypothesis import HealthCheck, given, settings
 from hypothesis import strategies as st
 
 from app.models.query import QueryRequest, QueryResponse, SourceReference
+from app.models.search import SearchResult
 from app.services.query_service import QueryService
-from app.storage.vector_store import SearchResult
 
 
 # Strategy for generating valid query requests
@@ -68,7 +68,7 @@ def search_result_strategy(draw, doc_id=None, min_score=0.0, max_score=1.0):
         page=page,
         chunk_index=chunk_index,
         metadata={},
-        relevance_score=relevance_score,
+        score=relevance_score,
     )
 
 
@@ -163,7 +163,7 @@ class TestRetrievalRelevanceOrdering:
                 page=i,
                 chunk_index=i,
                 metadata={},
-                relevance_score=score,
+                score=score,
             )
             search_results.append(result)
 
@@ -228,7 +228,7 @@ class TestRetrievalRelevanceOrdering:
                 page=i,
                 chunk_index=i,
                 metadata={},
-                relevance_score=score,
+                score=score,
             )
             search_results.append(result)
 
@@ -313,7 +313,7 @@ class TestPromptContainsQueryAndContext:
                 page=i,
                 chunk_index=i,
                 metadata={},
-                relevance_score=1.0 - (i * 0.1),
+                score=1.0 - (i * 0.1),
             )
             search_results.append(result)
 
@@ -400,7 +400,7 @@ class TestPromptContainsQueryAndContext:
             page=page_num,
             chunk_index=0,
             metadata={},
-            relevance_score=relevance,
+            score=relevance,
         )
 
         mock_vector_store.search.return_value = [result]
@@ -471,7 +471,7 @@ class TestResponseIncludesSourceCitations:
                 page=i + 1,
                 chunk_index=i,
                 metadata={},
-                relevance_score=1.0 - (i * 0.1),
+                score=1.0 - (i * 0.1),
             )
             search_results.append(result)
 
@@ -559,7 +559,7 @@ class TestResponseIncludesSourceCitations:
             page=1,
             chunk_index=0,
             metadata={},
-            relevance_score=0.9,
+            score=0.9,
         )
 
         mock_vector_store.search.return_value = [result]
@@ -624,7 +624,7 @@ class TestMultiSourceSynthesis:
                     page=chunk_idx + 1,
                     chunk_index=chunk_idx,
                     metadata={},
-                    relevance_score=max(0.0, score),
+                    score=max(0.0, score),
                 )
                 search_results.append(result)
 
@@ -733,7 +733,7 @@ class TestMultiSourceSynthesis:
                 page=1,
                 chunk_index=0,
                 metadata={},
-                relevance_score=0.9 - (doc_idx * 0.05),
+                score=0.9 - (doc_idx * 0.05),
             )
             search_results.append(result)
 

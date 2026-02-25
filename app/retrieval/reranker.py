@@ -1,25 +1,10 @@
 """Cross-encoder reranker for improving retrieval relevance."""
 
 import logging
-from typing import Any
+
+from app.models.search import SearchResult
 
 logger = logging.getLogger(__name__)
-
-
-class SearchResult:
-    """Search result with content and score."""
-
-    def __init__(
-        self,
-        chunk_id: str,
-        content: str,
-        score: float,
-        metadata: dict[str, Any] | None = None,
-    ):
-        self.chunk_id = chunk_id
-        self.content = content
-        self.score = score
-        self.metadata = metadata or {}
 
 
 class CrossEncoderReranker:

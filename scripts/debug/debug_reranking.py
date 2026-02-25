@@ -85,7 +85,6 @@ async def debug_reranking():
     print("=" * 80)
 
     from app.retrieval.reranker import CrossEncoderReranker
-    from app.retrieval.reranker import SearchResult as RerankerSearchResult
 
     reranker = CrossEncoderReranker(
         model_name=settings.reranker_model,
@@ -93,25 +92,10 @@ async def debug_reranking():
         device="auto" if settings.enable_gpu else "cpu",
     )
 
-    # Convert to reranker format
-    reranker_results = [
-        RerankerSearchResult(
-            chunk_id=r.chunk_id,
-            content=r.content,
-            score=r.relevance_score,
-            metadata={
-                "doc_id": r.doc_id,
-                "page": r.page,
-                "chunk_index": r.chunk_index,
-            },
-        )
-        for r in results
-    ]
-
     # Rerank top 10
     reranked = reranker.rerank(
         query=question,
-        chunks=reranker_results,
+        chunks=results,
         top_k=10,
     )
 

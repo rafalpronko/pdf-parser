@@ -9,7 +9,8 @@ Property 29: Reranking score normalization
 from hypothesis import given, settings
 from hypothesis import strategies as st
 
-from app.retrieval.reranker import CrossEncoderReranker, SearchResult
+from app.models.search import SearchResult
+from app.retrieval.reranker import CrossEncoderReranker
 
 
 # Strategies for generating test data

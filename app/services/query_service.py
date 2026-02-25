@@ -6,13 +6,14 @@ from app.clients.openai_client import OpenAIClient
 from app.config import get_settings
 from app.logging_config import get_logger
 from app.models.query import QueryRequest, QueryResponse, SourceReference
+from app.models.search import SearchResult
 from app.retrieval.bm25_index import BM25Index
 from app.retrieval.hybrid_search import HybridSearchEngine
 from app.retrieval.query_expansion import QueryExpander
 from app.retrieval.reranker import CrossEncoderReranker
 from app.retrieval.rrf import reciprocal_rank_fusion
 from app.services.document_service import DocumentService
-from app.storage.vector_store import SearchResult, VectorStore
+from app.storage.vector_store import VectorStore
 
 logger = get_logger(__name__)
 
@@ -75,7 +76,7 @@ class QueryService:
         if self.settings.enable_hybrid_search:
             from pathlib import Path
 
-            bm25_persist_path = Path(self.settings.vector_db_path) / "bm25_index.pkl"
+            bm25_persist_path = Path(self.settings.vector_db_path) / "bm25_index.json"
             self.bm25_index = bm25_index or BM25Index(
                 persist_path=bm25_persist_path,
                 k1=self.settings.bm25_k1,
@@ -243,23 +244,6 @@ class QueryService:
 
             # Step 4: Reranking (optional)
             if self.reranker and search_results:
-                # Convert to reranker format
-                from app.retrieval.reranker import SearchResult as RerankerSearchResult
-
-                reranker_results = [
-                    RerankerSearchResult(
-                        chunk_id=r.chunk_id,
-                        content=r.content,
-                        score=r.relevance_score,
-                        metadata={
-                            "doc_id": r.doc_id,
-                            "page": r.page,
-                            "chunk_index": r.chunk_index,
-                        },
-                    )
-                    for r in search_results
-                ]
-
                 # Rerank for EACH query variant if query expansion was used
                 rerank_k = max(request.top_k, self.settings.final_top_k)
 
@@ -271,7 +255,7 @@ class QueryService:
                     for i, query in enumerate(queries, 1):
                         reranked = self.reranker.rerank(
                             query=query,
-                            chunks=reranker_results,
+                            chunks=search_results,
                             top_k=rerank_k * 2,  # Get more results for fusion
                         )
                         all_reranked.append(reranked)
@@ -286,37 +270,23 @@ class QueryService:
                         for item in ranked_list:
                             if item.chunk_id not in chunk_lookup:
                                 chunk_lookup[item.chunk_id] = item
-                    reranked = sorted(
+                    search_results = sorted(
                         [chunk_lookup[cid] for cid in rrf_scores],
                         key=lambda x: rrf_scores[x.chunk_id],
                         reverse=True,
                     )[:rerank_k]
-                    for item in reranked:
+                    for item in search_results:
                         item.score = rrf_scores[item.chunk_id]
-                    logger.info(f"  RRF zwrócił {len(reranked)} chunków")
+                    logger.info(f"  RRF zwrócił {len(search_results)} chunków")
 
                 else:
                     # Single query - standard reranking
                     logger.info("→ Standard Reranking: Rerankując dla oryginalnego pytania")
-                    reranked = self.reranker.rerank(
+                    search_results = self.reranker.rerank(
                         query=request.question,
-                        chunks=reranker_results,
+                        chunks=search_results,
                         top_k=rerank_k,
                     )
-
-                # Convert back to SearchResult format
-                search_results = [
-                    SearchResult(
-                        chunk_id=r.chunk_id,
-                        doc_id=r.metadata.get("doc_id", ""),
-                        content=r.content,
-                        page=r.metadata.get("page", 0),
-                        chunk_index=r.metadata.get("chunk_index", 0),
-                        metadata=r.metadata,
-                        relevance_score=r.score,
-                    )
-                    for r in reranked
-                ]
 
             else:
                 # Just take top_k if no reranking

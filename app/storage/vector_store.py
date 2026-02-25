@@ -1,56 +1,13 @@
 """Vector database storage using ChromaDB."""
 
+import asyncio
 import logging
 from typing import Any
 
 from app.models.chunk import EmbeddedChunk
+from app.models.search import SearchResult
 
 logger = logging.getLogger(__name__)
-
-
-class SearchResult:
-    """Search result from vector database."""
-
-    def __init__(
-        self,
-        chunk_id: str,
-        doc_id: str,
-        content: str,
-        page: int,
-        chunk_index: int,
-        metadata: dict[str, Any],
-        relevance_score: float,
-    ):
-        """Initialize search result.
-
-        Args:
-            chunk_id: Unique chunk identifier
-            doc_id: Document identifier
-            content: Chunk content
-            page: Page number
-            chunk_index: Chunk index in document
-            metadata: Additional metadata
-            relevance_score: Relevance score (0-1, higher is more relevant)
-        """
-        self.chunk_id = chunk_id
-        self.doc_id = doc_id
-        self.content = content
-        self.page = page
-        self.chunk_index = chunk_index
-        self.metadata = metadata
-        self.relevance_score = relevance_score
-
-    def to_dict(self) -> dict[str, Any]:
-        """Convert to dictionary."""
-        return {
-            "chunk_id": self.chunk_id,
-            "doc_id": self.doc_id,
-            "content": self.content,
-            "page": self.page,
-            "chunk_index": self.chunk_index,
-            "metadata": self.metadata,
-            "relevance_score": self.relevance_score,
-        }
 
 
 class NoOpEmbeddingFunction:
@@ -178,8 +135,9 @@ class VectorStore:
                 metadatas.append(metadata)
                 embedding_vectors.append(embedded_chunk.embedding)
 
-            # Add to collection
-            self._collection.add(
+            # Add to collection (offload sync ChromaDB I/O to thread)
+            await asyncio.to_thread(
+                self._collection.add,
                 ids=ids,
                 embeddings=embedding_vectors,
                 documents=documents,
@@ -221,8 +179,9 @@ class VectorStore:
             # Build where clause for filtering
             where = {"doc_id": doc_id} if doc_id else None
 
-            # Query the collection
-            results = self._collection.query(
+            # Query the collection (offload sync ChromaDB I/O to thread)
+            results = await asyncio.to_thread(
+                self._collection.query,
                 query_embeddings=[query_embedding],
                 n_results=top_k,
                 where=where,
@@ -243,8 +202,9 @@ class VectorStore:
                     search_results.append(
                         SearchResult(
                             chunk_id=chunk_id,
-                            doc_id=metadata["doc_id"],
                             content=content,
+                            score=relevance_score,
+                            doc_id=metadata["doc_id"],
                             page=metadata["page"],
                             chunk_index=metadata["chunk_index"],
                             metadata={
@@ -252,7 +212,6 @@ class VectorStore:
                                 for k, v in metadata.items()
                                 if k not in ["doc_id", "page", "chunk_index"]
                             },
-                            relevance_score=relevance_score,
                         )
                     )
 
@@ -276,14 +235,16 @@ class VectorStore:
             bool: True if successful (even if no chunks were found)
         """
         try:
-            # Query for all chunks with this doc_id
-            results = self._collection.get(
+            # Query for all chunks with this doc_id (offload sync ChromaDB I/O)
+            results = await asyncio.to_thread(
+                self._collection.get,
                 where={"doc_id": doc_id},
             )
 
             if results["ids"]:
                 # Delete all matching chunks
-                self._collection.delete(
+                await asyncio.to_thread(
+                    self._collection.delete,
                     ids=results["ids"],
                 )
                 logger.info(f"Deleted {len(results['ids'])} chunks for document '{doc_id}'")
@@ -308,7 +269,8 @@ class VectorStore:
             SearchResult | None: The chunk if found, None otherwise
         """
         try:
-            results = self._collection.get(
+            results = await asyncio.to_thread(
+                self._collection.get,
                 ids=[chunk_id],
                 include=["embeddings", "documents", "metadatas"],
             )
@@ -319,8 +281,9 @@ class VectorStore:
 
                 return SearchResult(
                     chunk_id=chunk_id,
-                    doc_id=metadata["doc_id"],
                     content=content,
+                    score=1.0,  # Not from search, so max score
+                    doc_id=metadata["doc_id"],
                     page=metadata["page"],
                     chunk_index=metadata["chunk_index"],
                     metadata={
@@ -328,7 +291,6 @@ class VectorStore:
                         for k, v in metadata.items()
                         if k not in ["doc_id", "page", "chunk_index"]
                     },
-                    relevance_score=1.0,  # Not from search, so max score
                 )
 
             return None
@@ -348,12 +310,13 @@ class VectorStore:
         """
         try:
             if doc_id:
-                results = self._collection.get(
+                results = await asyncio.to_thread(
+                    self._collection.get,
                     where={"doc_id": doc_id},
                 )
                 return len(results["ids"])
             else:
-                return self._collection.count()
+                return await asyncio.to_thread(self._collection.count)
 
         except Exception as e:
             logger.error(f"Failed to count chunks: {e}")

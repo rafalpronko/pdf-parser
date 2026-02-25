@@ -1,7 +1,7 @@
 """BM25 keyword search index for document chunks."""
 
+import json
 import logging
-import pickle
 import re
 from pathlib import Path
 from typing import Any
@@ -236,9 +236,10 @@ class BM25Index:
             logger.debug("BM25 index is empty")
 
     def save(self) -> None:
-        """Persist index to disk.
+        """Persist index to disk as JSON.
 
         Saves all index data structures to disk for later loading.
+        Uses JSON instead of pickle for security (no arbitrary code execution).
         """
         if self.persist_path is None:
             logger.warning("No persist_path configured, skipping save")
@@ -257,51 +258,79 @@ class BM25Index:
             "b": self.b,
         }
 
-        with open(self.persist_path, "wb") as f:
-            pickle.dump(index_data, f)
+        with open(self.persist_path, "w", encoding="utf-8") as f:
+            json.dump(index_data, f, ensure_ascii=False)
 
         logger.info(f"Saved BM25 index to {self.persist_path}")
 
     def load(self) -> None:
-        """Load index from disk.
+        """Load index from disk (JSON format, with legacy pickle fallback).
 
         Loads previously saved index data and rebuilds BM25 index.
+        Tries JSON first; falls back to legacy .pkl for migration.
         """
         if self.persist_path is None:
             logger.warning("No persist_path configured, skipping load")
             return
 
+        # Try JSON path first
+        if self.persist_path.exists():
+            try:
+                with open(self.persist_path, encoding="utf-8") as f:
+                    index_data = json.load(f)
+                self._restore_index_data(index_data)
+                logger.info(
+                    f"Loaded BM25 index from {self.persist_path} with {len(self.doc_ids)} documents"
+                )
+                return
+            except (json.JSONDecodeError, UnicodeDecodeError):
+                logger.warning(
+                    f"Failed to read {self.persist_path} as JSON, trying legacy pickle fallback"
+                )
+
+        # Fallback: try legacy .pkl file for migration
+        pkl_path = self.persist_path.with_suffix(".pkl")
+        if pkl_path.exists() and pkl_path != self.persist_path:
+            try:
+                import pickle  # noqa: S403 — one-time migration only
+
+                with open(pkl_path, "rb") as f:
+                    index_data = pickle.load(f)  # noqa: S301
+                self._restore_index_data(index_data)
+                logger.info(
+                    f"Migrated BM25 index from legacy pickle {pkl_path} "
+                    f"({len(self.doc_ids)} documents) — saving as JSON"
+                )
+                self.save()  # re-save as JSON
+                return
+            except Exception as e:
+                logger.error(f"Failed to load legacy pickle BM25 index: {e}")
+
         if not self.persist_path.exists():
             logger.info(f"No saved index found at {self.persist_path}")
             return
 
-        try:
-            with open(self.persist_path, "rb") as f:
-                index_data = pickle.load(f)
+        # If we got here, the file exists but couldn't be read
+        logger.error(f"Failed to load BM25 index from {self.persist_path}")
+        self._reset_to_empty()
 
-            # Restore index data
-            self.doc_ids = index_data["doc_ids"]
-            self.texts = index_data["texts"]
-            self.metadata = index_data["metadata"]
-            self.tokenized_corpus = index_data["tokenized_corpus"]
-            self.k1 = index_data.get("k1", self.k1)
-            self.b = index_data.get("b", self.b)
+    def _restore_index_data(self, index_data: dict) -> None:
+        """Restore internal state from deserialized index data."""
+        self.doc_ids = index_data["doc_ids"]
+        self.texts = index_data["texts"]
+        self.metadata = index_data["metadata"]
+        self.tokenized_corpus = index_data["tokenized_corpus"]
+        self.k1 = index_data.get("k1", self.k1)
+        self.b = index_data.get("b", self.b)
+        self._rebuild_bm25()
 
-            # Rebuild BM25 index
-            self._rebuild_bm25()
-
-            logger.info(
-                f"Loaded BM25 index from {self.persist_path} with {len(self.doc_ids)} documents"
-            )
-
-        except Exception as e:
-            logger.error(f"Failed to load BM25 index: {e}")
-            # Reset to empty state
-            self.doc_ids = []
-            self.texts = []
-            self.metadata = {}
-            self.tokenized_corpus = []
-            self.bm25 = None
+    def _reset_to_empty(self) -> None:
+        """Reset index to empty state."""
+        self.doc_ids = []
+        self.texts = []
+        self.metadata = {}
+        self.tokenized_corpus = []
+        self.bm25 = None
 
     def rebuild_from_chunks(self, chunks: list[Any]) -> None:
         """Rebuild index from document chunks.

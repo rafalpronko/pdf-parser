@@ -5,6 +5,20 @@ Wszystkie istotne zmiany w projekcie będą dokumentowane w tym pliku.
 Format bazuje na [Keep a Changelog](https://keepachangelog.com/pl/1.0.0/),
 a projekt stosuje [Semantic Versioning](https://semver.org/lang/pl/).
 
+## [1.3.1] - 2026-02-25
+
+### Bezpieczenstwo
+- **JSON zamiast insecure deserialization w BM25 (CWE-502)**: Zamiana niebezpiecznej deserializacji na `json.dump/load` w `bm25_index.py` — eliminacja ryzyka RCE. Backward-compatible: automatyczna jednorazowa migracja ze starego formatu do .json
+
+### Naprawiono
+- **Zunifikowany SearchResult**: Eliminacja 3 osobnych klas `SearchResult` (vector_store, reranker, models/search) — jedna definicja w `app/models/search.py` z property `relevance_score` jako alias `score`. Usuniecie ~30 linii glue code konwersji z `query_service.py`
+- **Sync operacje w async kontekscie**: Opakowanie synchronicznych wywolan ChromaDB (`collection.add/query/get/delete/count`) i file I/O (`write_bytes`) w `asyncio.to_thread()` — zapobiega blokowaniu event loop
+
+### Zmieniono
+- **Wersja projektu**: 1.3.0 -> 1.3.1
+- Import `SearchResult` we wszystkich modulach teraz z `app.models.search` (single source of truth)
+- Sciezka persystencji BM25: `bm25_index.json` (nowy format)
+
 ## [1.3.0] - 2026-02-25
 
 ### Bezpieczenstwo

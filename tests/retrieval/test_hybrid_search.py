@@ -12,9 +12,10 @@ import pytest
 from hypothesis import given, settings
 from hypothesis import strategies as st
 
+from app.models.search import SearchResult
 from app.retrieval.bm25_index import BM25Index
 from app.retrieval.hybrid_search import HybridSearchEngine
-from app.storage.vector_store import SearchResult, VectorStore
+from app.storage.vector_store import VectorStore
 
 
 class TestHybridSearchProperties:
@@ -76,7 +77,7 @@ class TestHybridSearchProperties:
                 page=0,
                 chunk_index=i,
                 metadata={},
-                relevance_score=1.0 - i * 0.1,
+                score=1.0 - i * 0.1,
             )
             for i in range(num_vector)
         ]
@@ -89,7 +90,7 @@ class TestHybridSearchProperties:
                 page=0,
                 chunk_index=i,
                 metadata={},
-                relevance_score=1.0 - i * 0.1,
+                score=1.0 - i * 0.1,
             )
             for i in range(num_keyword)
         ]
@@ -187,7 +188,7 @@ class TestHybridSearchUnit:
             page=0,
             chunk_index=0,
             metadata={},
-            relevance_score=0.8,
+            score=0.8,
         )
 
         vector_results = [shared_result]

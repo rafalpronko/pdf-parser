@@ -113,7 +113,7 @@ class DocumentService:
         )
 
         # BM25 index for keyword search
-        bm25_persist_path = Path(self.settings.vector_db_path) / "bm25_index.pkl"
+        bm25_persist_path = Path(self.settings.vector_db_path) / "bm25_index.json"
         self.bm25_index = bm25_index or BM25Index(
             persist_path=bm25_persist_path,
             k1=self.settings.bm25_k1,

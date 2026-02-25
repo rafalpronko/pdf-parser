@@ -7,7 +7,6 @@ from app.clients.openai_client import OpenAIClient
 from app.config import get_settings
 from app.retrieval.query_expansion import QueryExpander
 from app.retrieval.reranker import CrossEncoderReranker
-from app.retrieval.reranker import SearchResult as RerankerSearchResult
 from app.storage.vector_store import VectorStore
 
 os.environ["PDF_SERVICES_CLIENT_ID"] = "046fdceafbfc40fcba6a4dfdf1195d75"
@@ -69,20 +68,6 @@ async def debug_rrf_fusion():
         device="auto",
     )
 
-    reranker_results = [
-        RerankerSearchResult(
-            chunk_id=r.chunk_id,
-            content=r.content,
-            score=r.relevance_score,
-            metadata={
-                "doc_id": r.doc_id,
-                "page": r.page,
-                "chunk_index": r.chunk_index,
-            },
-        )
-        for r in unique_results
-    ]
-
     # Rerank dla każdego wariantu
     print("=" * 80)
     print("RERANKING DLA KAŻDEGO QUERY WARIANTU")
@@ -96,7 +81,7 @@ async def debug_rrf_fusion():
 
         reranked = reranker.rerank(
             query=query,
-            chunks=reranker_results,
+            chunks=unique_results,
             top_k=20,
         )
         all_reranked.append(reranked)

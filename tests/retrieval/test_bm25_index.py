@@ -99,7 +99,7 @@ class TestBM25IndexProperties:
         Validates: Requirements 9.4
         """
         with tempfile.TemporaryDirectory() as tmpdir:
-            persist_path = Path(tmpdir) / "bm25_index.pkl"
+            persist_path = Path(tmpdir) / "bm25_index.json"
 
             # Create and populate index
             index1 = BM25Index(persist_path=persist_path)

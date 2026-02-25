@@ -29,6 +29,15 @@ class SearchResult:
     chunk_index: int = 0
     metadata: dict[str, Any] = field(default_factory=dict)
 
+    @property
+    def relevance_score(self) -> float:
+        """Alias for score — used by vector store and hybrid search layers."""
+        return self.score
+
+    @relevance_score.setter
+    def relevance_score(self, value: float) -> None:
+        self.score = value
+
     def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary representation."""
         return {

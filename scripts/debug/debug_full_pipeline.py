@@ -145,25 +145,9 @@ async def debug_full_pipeline():
         device="auto",
     )
 
-    from app.retrieval.reranker import SearchResult as RerankerSearchResult
-
-    reranker_results = [
-        RerankerSearchResult(
-            chunk_id=r.chunk_id,
-            content=r.content,
-            score=r.relevance_score,
-            metadata={
-                "doc_id": r.doc_id,
-                "page": r.page,
-                "chunk_index": r.chunk_index,
-            },
-        )
-        for r in unique_results
-    ]
-
     reranked = reranker.rerank(
-        query=question,  # ← TUTAJ! Używa tylko oryginalnego pytania
-        chunks=reranker_results,
+        query=question,
+        chunks=unique_results,
         top_k=10,
     )
 

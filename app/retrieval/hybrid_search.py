@@ -2,9 +2,10 @@
 
 import logging
 
+from app.models.search import SearchResult
 from app.retrieval.bm25_index import BM25Index
 from app.retrieval.rrf import reciprocal_rank_fusion
-from app.storage.vector_store import SearchResult, VectorStore
+from app.storage.vector_store import VectorStore
 
 logger = logging.getLogger(__name__)
 
@@ -145,12 +146,12 @@ class HybridSearchEngine:
 
                     result = SearchResult(
                         chunk_id=chunk_id,
-                        doc_id=meta.get("doc_id", ""),
                         content=content,
+                        score=score,
+                        doc_id=meta.get("doc_id", ""),
                         page=meta.get("page", 0),
                         chunk_index=meta.get("chunk_index", 0),
                         metadata=meta,
-                        relevance_score=score,
                     )
                     search_results.append(result)
 
@@ -207,8 +208,9 @@ class HybridSearchEngine:
             fused_results.append(
                 SearchResult(
                     chunk_id=result.chunk_id,
-                    doc_id=result.doc_id,
                     content=result.content,
+                    score=score,
+                    doc_id=result.doc_id,
                     page=result.page,
                     chunk_index=result.chunk_index,
                     metadata={
@@ -216,7 +218,6 @@ class HybridSearchEngine:
                         "original_score": result.relevance_score,
                         "rrf_score": score,
                     },
-                    relevance_score=score,
                 )
             )
 

@@ -1,5 +1,6 @@
 """File storage utilities for handling PDF uploads."""
 
+import asyncio
 import hashlib
 import uuid
 from datetime import UTC, datetime
@@ -179,9 +180,9 @@ class FileStorageService:
         # Get storage path
         storage_path = self.get_storage_path(file_id, filename)
 
-        # Write file to disk
+        # Write file to disk (offload sync I/O to thread)
         try:
-            storage_path.write_bytes(file_content)
+            await asyncio.to_thread(storage_path.write_bytes, file_content)
         except Exception as e:
             raise OSError(f"Failed to write file to disk: {e}") from e
 
