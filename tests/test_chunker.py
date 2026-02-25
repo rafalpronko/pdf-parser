@@ -130,10 +130,7 @@ class TestSemanticChunker:
         assert len(chunks) > 0
 
         # At least one chunk should have associated images
-        has_images = any(
-            len(chunk.metadata.get("associated_images", [])) > 0
-            for chunk in chunks
-        )
+        has_images = any(len(chunk.metadata.get("associated_images", [])) > 0 for chunk in chunks)
         assert has_images
 
     def test_chunk_with_structure(self):

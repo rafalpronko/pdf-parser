@@ -3,9 +3,9 @@
 import asyncio
 import os
 
+from app.config import reload_settings
 from app.models.query import QueryRequest
 from app.services.query_service import QueryService
-from app.config import reload_settings
 
 os.environ["PDF_SERVICES_CLIENT_ID"] = "046fdceafbfc40fcba6a4dfdf1195d75"
 os.environ["PDF_SERVICES_CLIENT_SECRET"] = "p8e-AS99RVT34WM6K-Rpqyt3ix0ecUG2LUYf"
@@ -25,10 +25,10 @@ async def test_increased_topk():
     print("TEST: ZWIĘKSZONE TOP_K")
     print("=" * 80)
     print(f"\nPytanie: {question}")
-    print(f"Ustawienia:")
-    print(f"  - reranking_top_k: 40 (było 20)")
-    print(f"  - final_top_k: 10 (było 5)")
-    print(f"  - Reranking: WŁĄCZONY\n")
+    print("Ustawienia:")
+    print("  - reranking_top_k: 40 (było 20)")
+    print("  - final_top_k: 10 (było 5)")
+    print("  - Reranking: WŁĄCZONY\n")
 
     result = await query_service.query(
         QueryRequest(
@@ -42,22 +42,20 @@ async def test_increased_topk():
     print("WYNIKI")
     print("=" * 80)
 
-    print(f"\n📝 Odpowiedź:")
+    print("\n📝 Odpowiedź:")
     print(f"{result.answer}\n")
 
-    print(f"📊 Statystyki:")
+    print("📊 Statystyki:")
     print(f"  Czas: {result.processing_time:.2f}s")
     print(f"  Liczba źródeł: {len(result.sources)}")
 
     if result.sources:
-        print(f"\n📚 Top 10 Źródeł (PO rerankingu z większą pulą):")
+        print("\n📚 Top 10 Źródeł (PO rerankingu z większą pulą):")
         for i, source in enumerate(result.sources, 1):
             is_target = "pojazd (silnikowy" in source.chunk_content.lower()
             marker = " ← SZUKANY CHUNK!" if is_target else ""
 
-            print(
-                f"\n  {i}. Strona {source.page}, Relevance: {source.relevance_score:.4f}{marker}"
-            )
+            print(f"\n  {i}. Strona {source.page}, Relevance: {source.relevance_score:.4f}{marker}")
             print(f"     Chunk: {source.chunk_content[:150]}...")
 
     # Sprawdź czy odpowiedź zawiera kluczowe frazy

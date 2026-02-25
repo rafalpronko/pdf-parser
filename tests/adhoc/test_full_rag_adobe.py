@@ -60,7 +60,7 @@ async def main():
 
     print(f"Processing document: {test_pdf.name}")
     upload_response = await doc_service.process_document(file_content, metadata)
-    print(f"\n✓ Document processed successfully!")
+    print("\n✓ Document processed successfully!")
     print(f"  Document ID: {upload_response.doc_id}")
     print(f"  Status: {upload_response.status}")
     print(f"  Message: {upload_response.message}")
@@ -95,16 +95,16 @@ async def main():
     print("STEP 6: Results")
     print("=" * 80)
 
-    print(f"\n📝 Answer:")
+    print("\n📝 Answer:")
     print(f"{result.answer}")
 
-    print(f"\n📊 Metadata:")
+    print("\n📊 Metadata:")
     print(f"  - Processing time: {result.processing_time:.2f}s")
     print(f"  - Modalities used: {result.modalities_used}")
     print(f"  - Number of sources: {len(result.sources)}")
     print(f"  - Number of visual sources: {len(result.visual_sources)}")
 
-    print(f"\n📚 Source References:")
+    print("\n📚 Source References:")
     for i, source in enumerate(result.sources[:5], 1):
         print(f"\n  Source {i}:")
         print(f"    Filename: {source.filename}")
@@ -121,10 +121,10 @@ async def main():
     expected_answer = """Składka może być płatna gotówką, kartą płatniczą lub przelewem bankowym, w zależności od dostępności danej formy płatności w punkcie sprzedaży.
 Składka lub jej pierwsza rata powinna być zapłacona przy zawarciu umowy lub później, zgodnie z ustaleniami w umowie ubezpieczenia. Wysokość rat składki i terminy płatności są określone w polisie."""
 
-    print(f"\n Expected answer:")
+    print("\n Expected answer:")
     print(f"{expected_answer}")
 
-    print(f"\n✓ Generated answer:")
+    print("\n✓ Generated answer:")
     print(f"{result.answer}")
 
     # Check if key phrases are present
@@ -137,7 +137,7 @@ Składka lub jej pierwsza rata powinna być zapłacona przy zawarciu umowy lub p
         "polisie",
     ]
 
-    print(f"\n📋 Key phrases check:")
+    print("\n📋 Key phrases check:")
     for phrase in key_phrases:
         present = phrase.lower() in result.answer.lower()
         symbol = "✓" if present else "✗"

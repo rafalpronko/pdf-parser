@@ -1,9 +1,9 @@
 """Hybrid search combining vector and keyword search with RRF fusion."""
 
 import logging
-from collections import defaultdict
 
 from app.retrieval.bm25_index import BM25Index
+from app.retrieval.rrf import reciprocal_rank_fusion
 from app.storage.vector_store import SearchResult, VectorStore
 
 logger = logging.getLogger(__name__)
@@ -67,7 +67,7 @@ class HybridSearchEngine:
         keyword_results = await self.keyword_search(query, top_k * 2)
 
         # Fuse results using RRF
-        fused_results = self.reciprocal_rank_fusion(
+        fused_results = self.fuse_results(
             vector_results,
             keyword_results,
             k=60,  # Standard RRF constant
@@ -169,73 +169,56 @@ class HybridSearchEngine:
             logger.error(f"  Keyword search FAILED: {e}")
             return []
 
-    def reciprocal_rank_fusion(
+    def fuse_results(
         self,
         vector_results: list[SearchResult],
         keyword_results: list[SearchResult],
         k: int = 60,
     ) -> list[SearchResult]:
-        """Fuse rankings using Reciprocal Rank Fusion.
-
-        RRF formula: score = sum(1 / (k + rank_i)) for each ranking
+        """Fuse rankings using weighted Reciprocal Rank Fusion.
 
         Args:
             vector_results: Results from vector search
             keyword_results: Results from keyword search
-            k: RRF constant (default 60)
+            k: RRF smoothing constant (default 60)
 
         Returns:
             Fused and sorted results
         """
-        # Calculate RRF scores
-        rrf_scores: dict[str, float] = defaultdict(float)
+        # Build chunk lookup from both sources
         chunk_map: dict[str, SearchResult] = {}
-
-        # Add vector search rankings
-        for rank, result in enumerate(vector_results):
-            rrf_scores[result.chunk_id] += self.vector_weight / (k + rank + 1)
+        for result in vector_results:
             chunk_map[result.chunk_id] = result
-
-        # Add keyword search rankings
-        for rank, result in enumerate(keyword_results):
-            rrf_scores[result.chunk_id] += self.keyword_weight / (k + rank + 1)
+        for result in keyword_results:
             if result.chunk_id not in chunk_map:
                 chunk_map[result.chunk_id] = result
 
-        # Create fused results with updated scores
+        # Compute weighted RRF scores
+        rrf_scores = reciprocal_rank_fusion(
+            ranked_lists=[vector_results, keyword_results],
+            weights=[self.vector_weight, self.keyword_weight],
+            k=k,
+        )
+
+        # Build fused results sorted by RRF score
         fused_results = []
-        for chunk_id, rrf_score in rrf_scores.items():
+        for chunk_id, score in sorted(rrf_scores.items(), key=lambda x: x[1], reverse=True):
             result = chunk_map[chunk_id]
-
-            # Create new result with fused score
-            fused_result = SearchResult(
-                chunk_id=result.chunk_id,
-                doc_id=result.doc_id,
-                content=result.content,
-                page=result.page,
-                chunk_index=result.chunk_index,
-                metadata={
-                    **result.metadata,
-                    "original_score": result.relevance_score,
-                    "rrf_score": rrf_score,
-                },
-                relevance_score=rrf_score,
+            fused_results.append(
+                SearchResult(
+                    chunk_id=result.chunk_id,
+                    doc_id=result.doc_id,
+                    content=result.content,
+                    page=result.page,
+                    chunk_index=result.chunk_index,
+                    metadata={
+                        **result.metadata,
+                        "original_score": result.relevance_score,
+                        "rrf_score": score,
+                    },
+                    relevance_score=score,
+                )
             )
-            fused_results.append(fused_result)
 
-        # Sort by RRF score descending
-        fused_results.sort(key=lambda x: x.relevance_score, reverse=True)
-
-        logger.info(f"  RRF Fusion - combined to {len(fused_results)} unique results:")
-        for i, res in enumerate(fused_results[:5], 1):  # Log top 5
-            orig_score = res.metadata.get("original_score", 0.0)
-            rrf_score = res.metadata.get("rrf_score", 0.0)
-            logger.info(
-                f"    {i}. RRF={rrf_score:.4f} (orig={orig_score:.4f}) | "
-                f"doc={res.doc_id[:8]}... | chunk={res.chunk_index} | "
-                f"content={res.content[:80]}..."
-            )
-        if len(fused_results) > 5:
-            logger.info(f"    ... and {len(fused_results) - 5} more results")
-
+        logger.info(f"  RRF Fusion - combined to {len(fused_results)} unique results")
         return fused_results

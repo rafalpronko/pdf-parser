@@ -3,11 +3,6 @@
 import logging
 from typing import Any
 
-from typing import Any, TYPE_CHECKING
-
-if TYPE_CHECKING:
-    import torch
-
 logger = logging.getLogger(__name__)
 
 
@@ -258,9 +253,9 @@ class CrossEncoderReranker:
         min_score = min(scores)
         max_score = max(scores)
 
-        # Avoid division by zero
+        # All scores equal means all equally relevant
         if max_score == min_score:
-            return [0.5] * len(scores)
+            return [1.0] * len(scores)
 
         # Min-max normalization
         normalized = [(score - min_score) / (max_score - min_score) for score in scores]

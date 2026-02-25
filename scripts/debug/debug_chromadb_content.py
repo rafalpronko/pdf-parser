@@ -11,9 +11,7 @@ async def main():
     print("Querying ChromaDB for chunks containing 'składk'...")
 
     # Get all chunks
-    results = vector_store._collection.get(
-        limit=1000, include=["documents", "metadatas"]
-    )
+    results = vector_store._collection.get(limit=1000, include=["documents", "metadatas"])
 
     total_chunks = len(results["documents"])
     print(f"\nTotal chunks in DB: {total_chunks}")
@@ -22,9 +20,7 @@ async def main():
     skladka_chunks = []
     for i, doc in enumerate(results["documents"]):
         if "składk" in doc.lower():
-            skladka_chunks.append(
-                {"content": doc, "metadata": results["metadatas"][i]}
-            )
+            skladka_chunks.append({"content": doc, "metadata": results["metadatas"][i]})
 
     print(f"Chunks containing 'składk': {len(skladka_chunks)}\n")
 

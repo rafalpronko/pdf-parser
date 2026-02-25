@@ -10,6 +10,7 @@ from app.retrieval.bm25_index import BM25Index
 from app.retrieval.hybrid_search import HybridSearchEngine
 from app.retrieval.query_expansion import QueryExpander
 from app.retrieval.reranker import CrossEncoderReranker
+from app.retrieval.rrf import reciprocal_rank_fusion
 from app.services.document_service import DocumentService
 from app.storage.vector_store import SearchResult, VectorStore
 
@@ -56,7 +57,11 @@ class QueryService:
 
         # Initialize core components
         self.openai_client = openai_client or OpenAIClient(
-            api_key=self.settings.openai_api_key,
+            api_key=(
+                self.settings.openai_api_key.get_secret_value()
+                if self.settings.openai_api_key
+                else ""
+            ),
             model=self.settings.openai_model,
             embedding_model=self.settings.openai_embedding_model,
         )
@@ -199,7 +204,9 @@ class QueryService:
                 logger.info(f"→ Retrieval Mode: HYBRID SEARCH (top_k={retrieval_k})")
 
                 # For query expansion, we search with each variation and combine
-                for i, (query, embedding) in enumerate(zip(queries, query_embeddings), 1):
+                for i, (query, embedding) in enumerate(
+                    zip(queries, query_embeddings, strict=True), 1
+                ):
                     logger.info(f"  Searching with variation {i}/{len(queries)}")
                     results = await self.hybrid_search.search(
                         query=query,
@@ -272,12 +279,25 @@ class QueryService:
 
                     # Use Reciprocal Rank Fusion to combine rankings
                     logger.info("→ Reciprocal Rank Fusion: Łączenie wyników")
-                    reranked = self._reciprocal_rank_fusion(all_reranked, k=60)[:rerank_k]
+                    rrf_scores = reciprocal_rank_fusion(all_reranked, k=60)
+                    # Build merged result list sorted by RRF score
+                    chunk_lookup = {}
+                    for ranked_list in all_reranked:
+                        for item in ranked_list:
+                            if item.chunk_id not in chunk_lookup:
+                                chunk_lookup[item.chunk_id] = item
+                    reranked = sorted(
+                        [chunk_lookup[cid] for cid in rrf_scores],
+                        key=lambda x: rrf_scores[x.chunk_id],
+                        reverse=True,
+                    )[:rerank_k]
+                    for item in reranked:
+                        item.score = rrf_scores[item.chunk_id]
                     logger.info(f"  RRF zwrócił {len(reranked)} chunków")
 
                 else:
                     # Single query - standard reranking
-                    logger.info(f"→ Standard Reranking: Rerankując dla oryginalnego pytania")
+                    logger.info("→ Standard Reranking: Rerankując dla oryginalnego pytania")
                     reranked = self.reranker.rerank(
                         query=request.question,
                         chunks=reranker_results,
@@ -410,61 +430,6 @@ class QueryService:
         )
 
         return search_results
-
-    def _reciprocal_rank_fusion(
-        self,
-        ranked_lists: list[list],
-        k: int = 60,
-    ) -> list:
-        """Combine multiple ranked lists using Reciprocal Rank Fusion.
-
-        RRF score for document d:
-            RRF(d) = sum over all rankings of: 1 / (k + rank(d))
-
-        where k is a constant (typically 60) to reduce impact of high ranks.
-
-        Args:
-            ranked_lists: List of ranked result lists (each from different query variant)
-            k: Constant for RRF formula (default 60)
-
-        Returns:
-            Combined list sorted by RRF score (descending)
-        """
-        # Calculate RRF scores for all documents
-        rrf_scores: dict[str, float] = {}
-        doc_metadata: dict[str, any] = {}  # Store first occurrence of each doc
-
-        for ranked_list in ranked_lists:
-            for rank, doc in enumerate(ranked_list, start=1):
-                doc_id = doc.chunk_id
-
-                # RRF formula: 1 / (k + rank)
-                rrf_score = 1.0 / (k + rank)
-
-                if doc_id in rrf_scores:
-                    rrf_scores[doc_id] += rrf_score
-                else:
-                    rrf_scores[doc_id] = rrf_score
-                    doc_metadata[doc_id] = doc  # Keep first occurrence
-
-        # Sort by RRF score (descending) and return documents
-        sorted_doc_ids = sorted(
-            rrf_scores.keys(),
-            key=lambda doc_id: rrf_scores[doc_id],
-            reverse=True,
-        )
-
-        # Reconstruct result list with RRF scores
-        result = []
-        for doc_id in sorted_doc_ids:
-            doc = doc_metadata[doc_id]
-            # Update score to RRF score
-            doc.score = rrf_scores[doc_id]
-            result.append(doc)
-
-        logger.info(f"  RRF combined {len(ranked_lists)} rankings into {len(result)} unique docs")
-
-        return result
 
     async def generate_response(
         self,

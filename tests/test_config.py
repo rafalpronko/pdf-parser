@@ -1,10 +1,10 @@
 """Tests for configuration module."""
 
-import os
 from pathlib import Path
 
 import pytest
-from hypothesis import HealthCheck, given, settings, strategies as st
+from hypothesis import HealthCheck, given, settings
+from hypothesis import strategies as st
 from pydantic import ValidationError
 
 from app.config import Settings, get_settings, reload_settings
@@ -16,13 +16,18 @@ class TestSettingsValidation:
     def test_settings_with_valid_config(self, monkeypatch):
         """Test that settings load correctly with valid configuration."""
         # Set required environment variables
-        monkeypatch.setenv("OPENAI_API_KEY", "sk-proj-test-fake-key-for-unit-tests-only-1234567890abcdef")
+        monkeypatch.setenv(
+            "OPENAI_API_KEY", "sk-proj-test-fake-key-for-unit-tests-only-1234567890abcdef"
+        )
         monkeypatch.setenv("CHUNK_SIZE", "512")
         monkeypatch.setenv("CHUNK_OVERLAP", "50")
 
         settings = Settings()
 
-        assert settings.openai_api_key == "sk-proj-test-fake-key-for-unit-tests-only-1234567890abcdef"
+        assert (
+            settings.openai_api_key.get_secret_value()
+            == "sk-proj-test-fake-key-for-unit-tests-only-1234567890abcdef"
+        )
         assert settings.chunk_size == 512
         assert settings.chunk_overlap == 50
         assert settings.openai_model == "gpt-4o-mini"
@@ -61,7 +66,9 @@ class TestSettingsValidation:
 
     def test_settings_invalid_chunk_size(self, monkeypatch):
         """Test that invalid chunk size raises validation error."""
-        monkeypatch.setenv("OPENAI_API_KEY", "sk-proj-test-fake-key-for-unit-tests-only-1234567890abcdef")
+        monkeypatch.setenv(
+            "OPENAI_API_KEY", "sk-proj-test-fake-key-for-unit-tests-only-1234567890abcdef"
+        )
         monkeypatch.setenv("CHUNK_SIZE", "50")  # Too small
 
         with pytest.raises(ValidationError) as exc_info:
@@ -71,7 +78,9 @@ class TestSettingsValidation:
 
     def test_settings_chunk_overlap_greater_than_size(self, monkeypatch):
         """Test that chunk overlap >= chunk size raises validation error."""
-        monkeypatch.setenv("OPENAI_API_KEY", "sk-proj-test-fake-key-for-unit-tests-only-1234567890abcdef")
+        monkeypatch.setenv(
+            "OPENAI_API_KEY", "sk-proj-test-fake-key-for-unit-tests-only-1234567890abcdef"
+        )
         monkeypatch.setenv("CHUNK_SIZE", "200")  # Small chunk size
         monkeypatch.setenv("CHUNK_OVERLAP", "200")  # Equal to chunk size
 
@@ -83,7 +92,9 @@ class TestSettingsValidation:
 
     def test_settings_invalid_log_level(self, monkeypatch):
         """Test that invalid log level raises validation error."""
-        monkeypatch.setenv("OPENAI_API_KEY", "sk-proj-test-fake-key-for-unit-tests-only-1234567890abcdef")
+        monkeypatch.setenv(
+            "OPENAI_API_KEY", "sk-proj-test-fake-key-for-unit-tests-only-1234567890abcdef"
+        )
         monkeypatch.setenv("LOG_LEVEL", "INVALID")
 
         with pytest.raises(ValidationError) as exc_info:
@@ -93,7 +104,9 @@ class TestSettingsValidation:
 
     def test_settings_log_level_case_insensitive(self, monkeypatch):
         """Test that log level is case insensitive."""
-        monkeypatch.setenv("OPENAI_API_KEY", "sk-proj-test-fake-key-for-unit-tests-only-1234567890abcdef")
+        monkeypatch.setenv(
+            "OPENAI_API_KEY", "sk-proj-test-fake-key-for-unit-tests-only-1234567890abcdef"
+        )
         monkeypatch.setenv("LOG_LEVEL", "debug")
 
         settings = Settings()
@@ -102,20 +115,24 @@ class TestSettingsValidation:
 
     def test_settings_creates_directories(self, monkeypatch, tmp_path):
         """Test that settings creates required directories."""
-        monkeypatch.setenv("OPENAI_API_KEY", "sk-proj-test-fake-key-for-unit-tests-only-1234567890abcdef")
+        monkeypatch.setenv(
+            "OPENAI_API_KEY", "sk-proj-test-fake-key-for-unit-tests-only-1234567890abcdef"
+        )
         upload_dir = tmp_path / "uploads"
         vector_db_dir = tmp_path / "vectordb"
         monkeypatch.setenv("UPLOAD_DIR", str(upload_dir))
         monkeypatch.setenv("VECTOR_DB_PATH", str(vector_db_dir))
 
-        settings = Settings()
+        Settings()  # noqa: F841 -- side effect creates directories
 
         assert upload_dir.exists()
         assert vector_db_dir.exists()
 
     def test_settings_default_values(self, monkeypatch):
         """Test that default values are set correctly."""
-        monkeypatch.setenv("OPENAI_API_KEY", "sk-proj-test-fake-key-for-unit-tests-only-1234567890abcdef")
+        monkeypatch.setenv(
+            "OPENAI_API_KEY", "sk-proj-test-fake-key-for-unit-tests-only-1234567890abcdef"
+        )
 
         settings = Settings()
 
@@ -131,10 +148,13 @@ class TestSettingsValidation:
 
     def test_get_settings_singleton(self, monkeypatch):
         """Test that get_settings returns the same instance."""
-        monkeypatch.setenv("OPENAI_API_KEY", "sk-proj-test-fake-key-for-unit-tests-only-1234567890abcdef")
+        monkeypatch.setenv(
+            "OPENAI_API_KEY", "sk-proj-test-fake-key-for-unit-tests-only-1234567890abcdef"
+        )
 
         # Clear the global settings first
         import app.config
+
         app.config._settings = None
 
         settings1 = get_settings()
@@ -144,7 +164,9 @@ class TestSettingsValidation:
 
     def test_reload_settings(self, monkeypatch):
         """Test that reload_settings creates a new instance."""
-        monkeypatch.setenv("OPENAI_API_KEY", "sk-proj-test-fake-key-for-unit-tests-only-1234567890abcdef")
+        monkeypatch.setenv(
+            "OPENAI_API_KEY", "sk-proj-test-fake-key-for-unit-tests-only-1234567890abcdef"
+        )
         monkeypatch.setenv("CHUNK_SIZE", "512")
 
         settings1 = reload_settings()
@@ -159,7 +181,6 @@ class TestSettingsValidation:
         assert settings2.chunk_size == 1024
 
 
-
 class TestConfigurationProperties:
     """Property-based tests for configuration validation."""
 
@@ -171,20 +192,20 @@ class TestConfigurationProperties:
         deadline=None,
         suppress_health_check=[HealthCheck.function_scoped_fixture],
     )
-    def test_property_23_invalid_chunk_size_rejected(
-        self, chunk_size, monkeypatch
-    ):
+    def test_property_23_invalid_chunk_size_rejected(self, chunk_size, monkeypatch):
         """Feature: pdf-rag-system, Property 23: Configuration validation at startup.
-        
-        For any application startup, if required configuration values are missing 
-        or invalid (e.g., invalid API key format, negative chunk size), the system 
+
+        For any application startup, if required configuration values are missing
+        or invalid (e.g., invalid API key format, negative chunk size), the system
         should fail to start and log specific configuration errors.
-        
+
         Validates: Requirements 6.4
-        
+
         This test verifies that invalid chunk sizes (below minimum of 100) are rejected.
         """
-        monkeypatch.setenv("OPENAI_API_KEY", "sk-proj-test-fake-key-for-unit-tests-only-1234567890abcdef")
+        monkeypatch.setenv(
+            "OPENAI_API_KEY", "sk-proj-test-fake-key-for-unit-tests-only-1234567890abcdef"
+        )
         monkeypatch.setenv("CHUNK_SIZE", str(chunk_size))
 
         with pytest.raises(ValidationError) as exc_info:
@@ -202,17 +223,17 @@ class TestConfigurationProperties:
         deadline=None,
         suppress_health_check=[HealthCheck.function_scoped_fixture],
     )
-    def test_property_23_chunk_size_too_large_rejected(
-        self, chunk_size, monkeypatch
-    ):
+    def test_property_23_chunk_size_too_large_rejected(self, chunk_size, monkeypatch):
         """Feature: pdf-rag-system, Property 23: Configuration validation at startup.
-        
-        For any application startup, if chunk size exceeds maximum (2000), 
+
+        For any application startup, if chunk size exceeds maximum (2000),
         the system should fail to start and log specific configuration errors.
-        
+
         Validates: Requirements 6.4
         """
-        monkeypatch.setenv("OPENAI_API_KEY", "sk-proj-test-fake-key-for-unit-tests-only-1234567890abcdef")
+        monkeypatch.setenv(
+            "OPENAI_API_KEY", "sk-proj-test-fake-key-for-unit-tests-only-1234567890abcdef"
+        )
         monkeypatch.setenv("CHUNK_SIZE", str(chunk_size))
 
         with pytest.raises(ValidationError) as exc_info:
@@ -233,15 +254,13 @@ class TestConfigurationProperties:
         deadline=None,
         suppress_health_check=[HealthCheck.function_scoped_fixture],
     )
-    def test_property_23_invalid_api_key_format_rejected(
-        self, api_key, monkeypatch
-    ):
+    def test_property_23_invalid_api_key_format_rejected(self, api_key, monkeypatch):
         """Feature: pdf-rag-system, Property 23: Configuration validation at startup.
-        
-        For any application startup, if the API key format is invalid 
-        (doesn't start with 'sk-'), the system should fail to start 
+
+        For any application startup, if the API key format is invalid
+        (doesn't start with 'sk-'), the system should fail to start
         and log specific configuration errors.
-        
+
         Validates: Requirements 6.4
         """
         monkeypatch.setenv("OPENAI_API_KEY", api_key)
@@ -260,17 +279,17 @@ class TestConfigurationProperties:
         deadline=None,
         suppress_health_check=[HealthCheck.function_scoped_fixture],
     )
-    def test_property_23_negative_chunk_overlap_rejected(
-        self, chunk_overlap, monkeypatch
-    ):
+    def test_property_23_negative_chunk_overlap_rejected(self, chunk_overlap, monkeypatch):
         """Feature: pdf-rag-system, Property 23: Configuration validation at startup.
-        
-        For any application startup, if chunk overlap is negative, 
+
+        For any application startup, if chunk overlap is negative,
         the system should fail to start and log specific configuration errors.
-        
+
         Validates: Requirements 6.4
         """
-        monkeypatch.setenv("OPENAI_API_KEY", "sk-proj-test-fake-key-for-unit-tests-only-1234567890abcdef")
+        monkeypatch.setenv(
+            "OPENAI_API_KEY", "sk-proj-test-fake-key-for-unit-tests-only-1234567890abcdef"
+        )
         monkeypatch.setenv("CHUNK_OVERLAP", str(chunk_overlap))
 
         with pytest.raises(ValidationError) as exc_info:
@@ -292,17 +311,19 @@ class TestConfigurationProperties:
         self, chunk_size, chunk_overlap, monkeypatch
     ):
         """Feature: pdf-rag-system, Property 23: Configuration validation at startup.
-        
-        For any application startup, if chunk overlap is greater than or equal to 
+
+        For any application startup, if chunk overlap is greater than or equal to
         chunk size, the system should fail to start and log specific configuration errors.
-        
+
         Validates: Requirements 6.4
         """
         # Only test cases where overlap >= size
         if chunk_overlap < chunk_size:
             pytest.skip("Only testing cases where overlap >= size")
 
-        monkeypatch.setenv("OPENAI_API_KEY", "sk-proj-test-fake-key-for-unit-tests-only-1234567890abcdef")
+        monkeypatch.setenv(
+            "OPENAI_API_KEY", "sk-proj-test-fake-key-for-unit-tests-only-1234567890abcdef"
+        )
         monkeypatch.setenv("CHUNK_SIZE", str(chunk_size))
         monkeypatch.setenv("CHUNK_OVERLAP", str(chunk_overlap))
 
@@ -327,17 +348,17 @@ class TestConfigurationProperties:
         deadline=None,
         suppress_health_check=[HealthCheck.function_scoped_fixture],
     )
-    def test_property_23_invalid_log_level_rejected(
-        self, log_level, monkeypatch
-    ):
+    def test_property_23_invalid_log_level_rejected(self, log_level, monkeypatch):
         """Feature: pdf-rag-system, Property 23: Configuration validation at startup.
-        
+
         For any application startup, if log level is not one of the valid values,
         the system should fail to start and log specific configuration errors.
-        
+
         Validates: Requirements 6.4
         """
-        monkeypatch.setenv("OPENAI_API_KEY", "sk-proj-test-fake-key-for-unit-tests-only-1234567890abcdef")
+        monkeypatch.setenv(
+            "OPENAI_API_KEY", "sk-proj-test-fake-key-for-unit-tests-only-1234567890abcdef"
+        )
         monkeypatch.setenv("LOG_LEVEL", log_level)
 
         with pytest.raises(ValidationError) as exc_info:
@@ -360,13 +381,13 @@ class TestConfigurationProperties:
         self, chunk_size, chunk_overlap, max_file_size, monkeypatch, tmp_path
     ):
         """Feature: pdf-rag-system, Property 24: Environment variable loading.
-        
-        For any configuration setting defined in environment variables, the system 
-        should correctly load and validate the value, with proper type conversion 
+
+        For any configuration setting defined in environment variables, the system
+        should correctly load and validate the value, with proper type conversion
         (strings to integers, booleans, etc.).
-        
+
         Validates: Requirements 7.5
-        
+
         This test verifies that integer configuration values are correctly loaded
         from environment variables and converted to the appropriate types.
         """
@@ -374,11 +395,13 @@ class TestConfigurationProperties:
         if chunk_overlap >= chunk_size:
             chunk_overlap = chunk_size - 1
 
-        monkeypatch.setenv("OPENAI_API_KEY", "sk-proj-test-fake-key-for-unit-tests-only-1234567890abcdef")
+        monkeypatch.setenv(
+            "OPENAI_API_KEY", "sk-proj-test-fake-key-for-unit-tests-only-1234567890abcdef"
+        )
         monkeypatch.setenv("CHUNK_SIZE", str(chunk_size))
         monkeypatch.setenv("CHUNK_OVERLAP", str(chunk_overlap))
         monkeypatch.setenv("MAX_FILE_SIZE", str(max_file_size))
-        
+
         # Use tmp_path to avoid creating directories in the project
         upload_dir = tmp_path / "uploads"
         vector_db_dir = tmp_path / "vectordb"
@@ -401,16 +424,16 @@ class TestConfigurationProperties:
         api_title=st.text(
             alphabet=st.characters(
                 blacklist_characters="\x00",
-                blacklist_categories=("Cs",)  # Exclude surrogates
+                blacklist_categories=("Cs",),  # Exclude surrogates
             ),
             min_size=1,
-            max_size=100
+            max_size=100,
         ),
         api_version=st.text(
             alphabet=st.characters(
                 whitelist_categories=("Nd", "Pd"),
                 blacklist_characters="\x00",
-                blacklist_categories=("Cs",)  # Exclude surrogates
+                blacklist_categories=("Cs",),  # Exclude surrogates
             ),
             min_size=1,
             max_size=20,
@@ -421,7 +444,7 @@ class TestConfigurationProperties:
                 min_codepoint=48,
                 max_codepoint=122,
                 blacklist_characters="\x00",
-                blacklist_categories=("Cs",)  # Exclude surrogates
+                blacklist_categories=("Cs",),  # Exclude surrogates
             ),
             min_size=1,
             max_size=50,
@@ -436,20 +459,22 @@ class TestConfigurationProperties:
         self, api_title, api_version, text_collection, monkeypatch, tmp_path
     ):
         """Feature: pdf-rag-system, Property 24: Environment variable loading.
-        
-        For any configuration setting defined in environment variables, the system 
+
+        For any configuration setting defined in environment variables, the system
         should correctly load and validate the value, with proper type conversion.
-        
+
         Validates: Requirements 7.5
-        
+
         This test verifies that string configuration values are correctly loaded
         from environment variables without type conversion issues.
         """
-        monkeypatch.setenv("OPENAI_API_KEY", "sk-proj-test-fake-key-for-unit-tests-only-1234567890abcdef")
+        monkeypatch.setenv(
+            "OPENAI_API_KEY", "sk-proj-test-fake-key-for-unit-tests-only-1234567890abcdef"
+        )
         monkeypatch.setenv("API_TITLE", api_title)
         monkeypatch.setenv("API_VERSION", api_version)
         monkeypatch.setenv("TEXT_COLLECTION", text_collection)
-        
+
         # Use tmp_path to avoid creating directories in the project
         upload_dir = tmp_path / "uploads"
         vector_db_dir = tmp_path / "vectordb"
@@ -469,27 +494,42 @@ class TestConfigurationProperties:
         assert settings.text_collection == text_collection
 
     @given(
-        log_level=st.sampled_from(["debug", "info", "warning", "error", "critical", "DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL", "DeBuG", "InFo"])
+        log_level=st.sampled_from(
+            [
+                "debug",
+                "info",
+                "warning",
+                "error",
+                "critical",
+                "DEBUG",
+                "INFO",
+                "WARNING",
+                "ERROR",
+                "CRITICAL",
+                "DeBuG",
+                "InFo",
+            ]
+        )
     )
     @settings(
         max_examples=100,
         deadline=None,
         suppress_health_check=[HealthCheck.function_scoped_fixture],
     )
-    def test_property_24_case_insensitive_loading(
-        self, log_level, monkeypatch, tmp_path
-    ):
+    def test_property_24_case_insensitive_loading(self, log_level, monkeypatch, tmp_path):
         """Feature: pdf-rag-system, Property 24: Environment variable loading.
-        
-        For any configuration setting defined in environment variables, the system 
+
+        For any configuration setting defined in environment variables, the system
         should correctly load and validate the value. For log level specifically,
         it should handle case-insensitive input and normalize to uppercase.
-        
+
         Validates: Requirements 7.5
         """
-        monkeypatch.setenv("OPENAI_API_KEY", "sk-proj-test-fake-key-for-unit-tests-only-1234567890abcdef")
+        monkeypatch.setenv(
+            "OPENAI_API_KEY", "sk-proj-test-fake-key-for-unit-tests-only-1234567890abcdef"
+        )
         monkeypatch.setenv("LOG_LEVEL", log_level)
-        
+
         # Use tmp_path to avoid creating directories in the project
         upload_dir = tmp_path / "uploads"
         vector_db_dir = tmp_path / "vectordb"
@@ -518,19 +558,19 @@ class TestConfigurationProperties:
         deadline=None,
         suppress_health_check=[HealthCheck.function_scoped_fixture],
     )
-    def test_property_24_path_type_conversion(
-        self, upload_dir_str, monkeypatch, tmp_path
-    ):
+    def test_property_24_path_type_conversion(self, upload_dir_str, monkeypatch, tmp_path):
         """Feature: pdf-rag-system, Property 24: Environment variable loading.
-        
-        For any configuration setting defined in environment variables, the system 
+
+        For any configuration setting defined in environment variables, the system
         should correctly load and validate the value, with proper type conversion.
         Specifically, string paths should be converted to Path objects.
-        
+
         Validates: Requirements 7.5
         """
-        monkeypatch.setenv("OPENAI_API_KEY", "sk-proj-test-fake-key-for-unit-tests-only-1234567890abcdef")
-        
+        monkeypatch.setenv(
+            "OPENAI_API_KEY", "sk-proj-test-fake-key-for-unit-tests-only-1234567890abcdef"
+        )
+
         # Use tmp_path to create a valid directory path
         upload_dir = tmp_path / upload_dir_str
         vector_db_dir = tmp_path / "vectordb"
@@ -542,7 +582,7 @@ class TestConfigurationProperties:
         # Verify type conversion from string to Path
         assert isinstance(settings.upload_dir, Path)
         assert str(settings.upload_dir) == str(upload_dir)
-        
+
         # Verify directory was created
         assert settings.upload_dir.exists()
         assert settings.upload_dir.is_dir()

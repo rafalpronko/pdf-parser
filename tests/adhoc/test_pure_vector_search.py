@@ -36,6 +36,7 @@ async def main():
     # Clear database FIRST (before initializing DocumentService)
     print("\n2. Clear Vector Store")
     from app.config import get_settings
+
     settings_for_vs = get_settings()
     vector_store = VectorStore(
         persist_directory=settings_for_vs.vector_db_path,
@@ -124,16 +125,12 @@ async def main():
     print(f"Chunks with TOC text: {toc_chunks}")
 
     if answer_chunks:
-        print(
-            f"\n✓ SUCCESS: Found {len(answer_chunks)} chunk(s) with answer content"
-        )
+        print(f"\n✓ SUCCESS: Found {len(answer_chunks)} chunk(s) with answer content")
     else:
         print("\n✗ FAILURE: No chunks with answer content found!")
 
     if toc_chunks and not answer_chunks:
-        print(
-            "⚠ PROBLEM: Vector search is ranking TOC higher than actual answers"
-        )
+        print("⚠ PROBLEM: Vector search is ranking TOC higher than actual answers")
 
     print("\n" + "=" * 80)
     print("TEST COMPLETED")

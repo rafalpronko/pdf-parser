@@ -4,10 +4,10 @@ import asyncio
 import os
 
 from app.clients.openai_client import OpenAIClient
-from app.config import get_settings, reload_settings
+from app.config import get_settings
 from app.retrieval.query_expansion import QueryExpander
-from app.storage.vector_store import VectorStore
 from app.retrieval.reranker import CrossEncoderReranker
+from app.storage.vector_store import VectorStore
 
 os.environ["PDF_SERVICES_CLIENT_ID"] = "046fdceafbfc40fcba6a4dfdf1195d75"
 os.environ["PDF_SERVICES_CLIENT_SECRET"] = "p8e-AS99RVT34WM6K-Rpqyt3ix0ecUG2LUYf"
@@ -47,7 +47,7 @@ async def debug_full_pipeline():
 
     print(f"\nWygenerowano {len(queries)} wariantów:\n")
     for i, q in enumerate(queries, 1):
-        query_type = "HyDE" if i == 1 else f"Multi-{i-1}"
+        query_type = "HyDE" if i == 1 else f"Multi-{i - 1}"
         print(f"{i}. [{query_type}] {q[:100]}...")
 
     # =========================================================================
@@ -92,14 +92,14 @@ async def debug_full_pipeline():
                 target_rank = rank
                 break
 
-        query_type = "HyDE" if i == 1 else f"Multi-{i-1}"
+        query_type = "HyDE" if i == 1 else f"Multi-{i - 1}"
         print(f"\n{i}. [{query_type}]")
         print(f"   Znaleziono: {len(results)} chunków")
         if target_rank:
             print(f"   ✓ Chunk 'Pojazd (silnikowy...' na pozycji #{target_rank}")
             target_chunk_ranks.append((query_type, target_rank))
         else:
-            print(f"   ✗ Chunk 'Pojazd (silnikowy...' NIE ZNALEZIONY w top-40")
+            print("   ✗ Chunk 'Pojazd (silnikowy...' NIE ZNALEZIONY w top-40")
 
     # =========================================================================
     # KROK 4: Deduplication
@@ -167,7 +167,7 @@ async def debug_full_pipeline():
         top_k=10,
     )
 
-    print(f"\nTop 10 po rerankingu:\n")
+    print("\nTop 10 po rerankingu:\n")
 
     target_in_reranked = False
     for i, result in enumerate(reranked, 1):
@@ -188,7 +188,7 @@ async def debug_full_pipeline():
     print("=" * 80)
 
     print("\n1. Query Expansion:")
-    print(f"   Wygenerowano {len(queries)} wariantów (1 HyDE + {len(queries)-1} Multi-Query)")
+    print(f"   Wygenerowano {len(queries)} wariantów (1 HyDE + {len(queries) - 1} Multi-Query)")
 
     print("\n2. Vector Search:")
     if target_chunk_ranks:
@@ -206,7 +206,7 @@ async def debug_full_pipeline():
         print("   ✗ Chunk UTRACONY")
 
     print("\n4. Reranking:")
-    print(f"   Query: TYLKO oryginalne pytanie (nie warianty!)")
+    print("   Query: TYLKO oryginalne pytanie (nie warianty!)")
     if target_in_reranked:
         print("   ✓ Chunk ZACHOWANY w top-10")
     else:

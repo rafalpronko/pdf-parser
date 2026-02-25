@@ -6,8 +6,9 @@ import os
 from app.clients.openai_client import OpenAIClient
 from app.config import get_settings
 from app.retrieval.query_expansion import QueryExpander
+from app.retrieval.reranker import CrossEncoderReranker
+from app.retrieval.reranker import SearchResult as RerankerSearchResult
 from app.storage.vector_store import VectorStore
-from app.retrieval.reranker import CrossEncoderReranker, SearchResult as RerankerSearchResult
 
 os.environ["PDF_SERVICES_CLIENT_ID"] = "046fdceafbfc40fcba6a4dfdf1195d75"
 os.environ["PDF_SERVICES_CLIENT_SECRET"] = "p8e-AS99RVT34WM6K-Rpqyt3ix0ecUG2LUYf"
@@ -109,7 +110,7 @@ async def debug_rrf_fusion():
                 break
 
         if not target_rank:
-            print(f"✗ Chunk 'Pojazd (silnikowy...' NIE w top-20!")
+            print("✗ Chunk 'Pojazd (silnikowy...' NIE w top-20!")
 
         # Pokaż top 5 dla tego wariantu
         print("\nTop 5:")
@@ -152,22 +153,20 @@ async def debug_rrf_fusion():
                     target_rrf_rank = rank
                     break
 
-            print(f"\n✓ Chunk 'Pojazd (silnikowy...' w RRF:")
+            print("\n✓ Chunk 'Pojazd (silnikowy...' w RRF:")
             print(f"  RRF Score: {target_rrf_score:.4f}")
             print(f"  RRF Rank: #{target_rrf_rank}")
 
             # Dekompozycja RRF score
-            print(f"\n  Dekompozycja RRF score:")
+            print("\n  Dekompozycja RRF score:")
             for i, ranked_list in enumerate(all_reranked, 1):
                 for rank, doc in enumerate(ranked_list, start=1):
                     if doc.chunk_id == target_chunk_id:
                         contribution = 1.0 / (60 + rank)
-                        print(
-                            f"    Query {i}: rank #{rank:2d} → contribution {contribution:.4f}"
-                        )
+                        print(f"    Query {i}: rank #{rank:2d} → contribution {contribution:.4f}")
                         break
         else:
-            print(f"\n✗ Chunk 'Pojazd (silnikowy...' NIE w RRF scores!")
+            print("\n✗ Chunk 'Pojazd (silnikowy...' NIE w RRF scores!")
 
     # Pokaż top 10 RRF
     print("\n" + "=" * 80)

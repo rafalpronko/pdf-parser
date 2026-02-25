@@ -2,12 +2,78 @@
 
 import logging
 import pickle
+import re
 from pathlib import Path
 from typing import Any
 
 from rank_bm25 import BM25Okapi
 
 logger = logging.getLogger(__name__)
+
+# English stop words for BM25 filtering
+STOP_WORDS = frozenset(
+    {
+        "a",
+        "an",
+        "the",
+        "and",
+        "or",
+        "but",
+        "in",
+        "on",
+        "at",
+        "to",
+        "for",
+        "of",
+        "with",
+        "by",
+        "from",
+        "is",
+        "are",
+        "was",
+        "were",
+        "be",
+        "been",
+        "being",
+        "have",
+        "has",
+        "had",
+        "do",
+        "does",
+        "did",
+        "will",
+        "would",
+        "could",
+        "should",
+        "may",
+        "might",
+        "shall",
+        "can",
+        "not",
+        "no",
+        "nor",
+        "so",
+        "if",
+        "then",
+        "than",
+        "that",
+        "this",
+        "these",
+        "those",
+        "it",
+        "its",
+        "as",
+        "up",
+        "out",
+        "about",
+        "into",
+        "over",
+        "after",
+        "before",
+    }
+)
+
+MIN_TOKEN_LENGTH = 2
 
 
 class BM25Index:
@@ -62,7 +128,7 @@ class BM25Index:
             raise ValueError("doc_ids, texts, and metadata must have same length")
 
         # Add to index
-        for doc_id, text, meta in zip(doc_ids, texts, metadata):
+        for doc_id, text, meta in zip(doc_ids, texts, metadata, strict=True):
             self.doc_ids.append(doc_id)
             self.texts.append(text)
             self.metadata[doc_id] = meta
@@ -142,15 +208,23 @@ class BM25Index:
     def _tokenize(self, text: str) -> list[str]:
         """Tokenize text for BM25.
 
-        Simple whitespace tokenization with lowercasing.
+        Lowercases, removes punctuation, filters stop words and short tokens.
 
         Args:
             text: Text to tokenize
 
         Returns:
-            List of tokens
+            List of filtered tokens
         """
-        return text.lower().split()
+        text = text.lower()
+        cleaned = re.sub(r"[^\w\s]", " ", text)
+        tokens = [
+            token
+            for token in cleaned.split()
+            if len(token) >= MIN_TOKEN_LENGTH and token not in STOP_WORDS
+        ]
+        # Fallback: if all tokens filtered, use simple split
+        return tokens if tokens else cleaned.split()
 
     def _rebuild_bm25(self) -> None:
         """Rebuild BM25 index from tokenized corpus."""

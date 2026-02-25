@@ -65,5 +65,12 @@ Thumbs.db
 # Backup files
 *.bak
 
+# Deploy files
+Dockerfile
+.dockerignore
+deploy.sh
+DEPLOYMENT.md
+cloudbuild.yaml
+
 # Logs directory
 logs/

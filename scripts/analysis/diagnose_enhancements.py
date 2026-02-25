@@ -2,12 +2,9 @@
 
 import asyncio
 import os
-from pathlib import Path
 
 from app.models.query import QueryRequest
-from app.parsers.adobe_pdf_parser import AdobePDFParser
 from app.services.query_service import QueryService
-from app.storage.vector_store import VectorStore
 
 # Set Adobe credentials
 os.environ["PDF_SERVICES_CLIENT_ID"] = "046fdceafbfc40fcba6a4dfdf1195d75"
@@ -23,6 +20,7 @@ async def test_configuration(config_name: str, hybrid: bool, expansion: bool, re
 
     # Reload settings
     from app.config import reload_settings
+
     reload_settings()
 
     # Initialize Query Service
@@ -100,7 +98,7 @@ async def main():
         status = "✓ SUCCESS" if result["success"] else "✗ FAILURE"
         print(f"  {status}: Found {result['found_phrases']}/{result['total_phrases']} phrases")
         if result["has_toc_text"]:
-            print(f"  ⚠ WARNING: Answer contains TOC text")
+            print("  ⚠ WARNING: Answer contains TOC text")
         print(f"  Preview: {result['answer_preview']}...")
 
     # Summary
@@ -148,7 +146,7 @@ async def main():
             culprits.append("Reranking")
 
         if culprits:
-            print(f"\n⚠ PROBLEM IDENTIFIED:")
+            print("\n⚠ PROBLEM IDENTIFIED:")
             for culprit in culprits:
                 print(f"  - {culprit} is causing incorrect results")
         else:

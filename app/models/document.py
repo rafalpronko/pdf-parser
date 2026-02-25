@@ -1,11 +1,13 @@
 """Document-related Pydantic models."""
 
 from datetime import datetime
+
 from pydantic import BaseModel, Field
 
 
 class DocumentMetadata(BaseModel):
     """Metadata for uploaded document."""
+
     filename: str
     content_type: str = "application/pdf"
     tags: list[str] = []
@@ -14,6 +16,7 @@ class DocumentMetadata(BaseModel):
 
 class DocumentUploadResponse(BaseModel):
     """Response after document upload."""
+
     doc_id: str
     filename: str
     status: str
@@ -23,6 +26,7 @@ class DocumentUploadResponse(BaseModel):
 
 class DocumentInfo(BaseModel):
     """Document information."""
+
     doc_id: str
     filename: str
     file_size: int = Field(ge=0, description="File size in bytes (non-negative)")

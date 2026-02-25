@@ -1,11 +1,10 @@
 """OpenAI GPT-4o Vision-based PDF parser."""
 
 import base64
-import io
 import logging
 from pathlib import Path
 
-from app.models.parsing import ImageBlock, ParsedDocument, TableBlock, TextBlock
+from app.models.parsing import ParsedDocument, TableBlock, TextBlock
 
 logger = logging.getLogger(__name__)
 
@@ -34,11 +33,15 @@ class OpenAIPDFParser:
         # Get API key from settings if not provided
         if not api_key:
             from app.config import get_settings
+
             settings = get_settings()
-            api_key = settings.openai_api_key
+            api_key = (
+                settings.openai_api_key.get_secret_value() if settings.openai_api_key else None
+            )
 
         # Create synchronous OpenAI client (not async)
         from openai import OpenAI
+
         self.client = OpenAI(api_key=api_key)
 
         logger.info(f"OpenAI PDF Parser initialized with model: {model}")
@@ -68,7 +71,7 @@ class OpenAIPDFParser:
         logger.info(f"  PDF loaded ({file_path.stat().st_size / 1024:.1f} KB)")
 
         # Extract content with GPT-4o Vision (processes entire PDF)
-        logger.info(f"  Sending to GPT-4o for extraction...")
+        logger.info("  Sending to GPT-4o for extraction...")
         result = self._extract_pdf_content(pdf_base64)
 
         # Parse the result

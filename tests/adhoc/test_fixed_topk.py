@@ -3,9 +3,9 @@
 import asyncio
 import os
 
+from app.config import reload_settings
 from app.models.query import QueryRequest
 from app.services.query_service import QueryService
-from app.config import reload_settings
 
 os.environ["PDF_SERVICES_CLIENT_ID"] = "046fdceafbfc40fcba6a4dfdf1195d75"
 os.environ["PDF_SERVICES_CLIENT_SECRET"] = "p8e-AS99RVT34WM6K-Rpqyt3ix0ecUG2LUYf"
@@ -24,7 +24,7 @@ async def test_fixed_topk():
     print("TEST: Fixed top_k Parameter")
     print("=" * 80)
     print(f"\nPytanie: {question}")
-    print(f"top_k: 10 (powinno teraz zwrócić 10 źródeł, nie 5)\n")
+    print("top_k: 10 (powinno teraz zwrócić 10 źródeł, nie 5)\n")
 
     result = await query_service.query(
         QueryRequest(
@@ -38,15 +38,15 @@ async def test_fixed_topk():
     print("WYNIKI")
     print("=" * 80)
 
-    print(f"\n📝 Odpowiedź:")
+    print("\n📝 Odpowiedź:")
     print(f"{result.answer}\n")
 
-    print(f"📊 Statystyki:")
+    print("📊 Statystyki:")
     print(f"  Czas: {result.processing_time:.2f}s")
     print(f"  Liczba źródeł: {len(result.sources)}")
 
     if result.sources:
-        print(f"\n📚 Wszystkie Źródła (powinna być teraz 10, nie 5):")
+        print("\n📚 Wszystkie Źródła (powinna być teraz 10, nie 5):")
         for i, source in enumerate(result.sources, 1):
             print(f"\n  {i}. Strona {source.page}, Relevance: {source.relevance_score:.4f}")
             print(f"     Chunk: {source.chunk_content[:150]}...")

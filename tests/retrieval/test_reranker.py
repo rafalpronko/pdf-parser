@@ -6,8 +6,8 @@ Property 2: Reranking retrieves more candidates
 Property 29: Reranking score normalization
 """
 
-import pytest
-from hypothesis import given, settings, strategies as st
+from hypothesis import given, settings
+from hypothesis import strategies as st
 
 from app.retrieval.reranker import CrossEncoderReranker, SearchResult
 
@@ -80,7 +80,13 @@ class TestCrossEncoderRerankerProperties:
         assert len(reranked) == min(final_k, len(chunks))
 
     @settings(deadline=None)  # Disable deadline for property tests
-    @given(scores=st.lists(st.floats(min_value=-100.0, max_value=100.0, allow_nan=False, allow_infinity=False), min_size=1, max_size=20))
+    @given(
+        scores=st.lists(
+            st.floats(min_value=-100.0, max_value=100.0, allow_nan=False, allow_infinity=False),
+            min_size=1,
+            max_size=20,
+        )
+    )
     def test_property_29_score_normalization(self, scores):
         """Property 29: Normalized scores should be in [0, 1] range.
 
@@ -105,9 +111,7 @@ class TestCrossEncoderRerankerUnit:
         reranker = CrossEncoderReranker()
         reranker.model = None  # Simulate model unavailable
 
-        chunks = [
-            SearchResult(f"chunk{i}", f"content {i}", 0.5) for i in range(3)
-        ]
+        chunks = [SearchResult(f"chunk{i}", f"content {i}", 0.5) for i in range(3)]
 
         # Should not raise error
         reranked = reranker.rerank("test query", chunks, top_k=2)
@@ -151,9 +155,9 @@ class TestCrossEncoderRerankerUnit:
         # Empty list
         assert reranker.normalize_scores([]) == []
 
-        # All same scores
+        # All same scores - equally relevant, should get max score
         normalized = reranker.normalize_scores([5.0, 5.0, 5.0])
-        assert all(s == 0.5 for s in normalized)
+        assert all(s == 1.0 for s in normalized)
 
         # Normal case
         normalized = reranker.normalize_scores([1.0, 2.0, 3.0])

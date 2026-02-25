@@ -3,9 +3,9 @@
 import asyncio
 import os
 
+from app.config import reload_settings
 from app.models.query import QueryRequest
 from app.services.query_service import QueryService
-from app.config import reload_settings
 
 os.environ["PDF_SERVICES_CLIENT_ID"] = "046fdceafbfc40fcba6a4dfdf1195d75"
 os.environ["PDF_SERVICES_CLIENT_SECRET"] = "p8e-AS99RVT34WM6K-Rpqyt3ix0ecUG2LUYf"
@@ -36,8 +36,7 @@ async def test_method(method_name: str, config: dict) -> dict:
 
     # Sprawdź czy chunk jest w źródłach
     chunk_in_sources = any(
-        "pojazd (silnikowy" in source.chunk_content.lower()
-        for source in result.sources
+        "pojazd (silnikowy" in source.chunk_content.lower() for source in result.sources
     )
 
     return {
@@ -95,9 +94,9 @@ async def main():
     results = []
 
     for method_info in methods:
-        print(f"\n{'='*80}")
+        print(f"\n{'=' * 80}")
         print(f"TESTOWANIE: {method_info['name']}")
-        print(f"{'='*80}")
+        print(f"{'=' * 80}")
 
         result = await test_method(method_info["name"], method_info["config"])
         results.append(result)
@@ -111,9 +110,7 @@ async def main():
     print("PODSUMOWANIE WSZYSTKICH METOD")
     print("=" * 80)
 
-    print(
-        f"\n{'Metoda':<35} | {'Frazy':<7} | {'Chunk':<6} | {'Czas':>7} | Status"
-    )
+    print(f"\n{'Metoda':<35} | {'Frazy':<7} | {'Chunk':<6} | {'Czas':>7} | Status")
     print("-" * 80)
 
     for result in results:

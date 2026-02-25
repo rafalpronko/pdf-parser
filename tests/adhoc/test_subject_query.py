@@ -3,9 +3,9 @@
 import asyncio
 import os
 
+from app.config import reload_settings
 from app.models.query import QueryRequest
 from app.services.query_service import QueryService
-from app.config import reload_settings
 
 os.environ["PDF_SERVICES_CLIENT_ID"] = "046fdceafbfc40fcba6a4dfdf1195d75"
 os.environ["PDF_SERVICES_CLIENT_SECRET"] = "p8e-AS99RVT34WM6K-Rpqyt3ix0ecUG2LUYf"
@@ -48,15 +48,15 @@ async def main():
         result = await test_with_method(method, question)
         results[method] = result
 
-        print(f"\n📝 Odpowiedź:")
+        print("\n📝 Odpowiedź:")
         print(f"{result.answer}\n")
 
-        print(f"📊 Statystyki:")
+        print("📊 Statystyki:")
         print(f"  Czas: {result.processing_time:.2f}s")
         print(f"  Liczba źródeł: {len(result.sources)}")
 
         if result.sources:
-            print(f"\n📚 Top 3 Źródła:")
+            print("\n📚 Top 3 Źródła:")
             for i, source in enumerate(result.sources[:3], 1):
                 print(f"  {i}. Strona {source.page}, Relevance: {source.relevance_score:.4f}")
                 print(f"     {source.chunk_content[:100]}...")
@@ -87,9 +87,7 @@ async def main():
 
     print("\n🔍 Obecność kluczowych terminów:")
     for method, result in results.items():
-        found = sum(
-            1 for term in key_terms if term.lower() in result.answer.lower()
-        )
+        found = sum(1 for term in key_terms if term.lower() in result.answer.lower())
         print(f"  {method:12s}: {found}/{len(key_terms)} terminów")
 
     # Która metoda najlepsza?
@@ -99,13 +97,11 @@ async def main():
 
     best_method = max(
         results.items(),
-        key=lambda x: sum(
-            1 for term in key_terms if term.lower() in x[1].answer.lower()
-        ),
+        key=lambda x: sum(1 for term in key_terms if term.lower() in x[1].answer.lower()),
     )
 
     print(f"\n✓ Najlepsza metoda dla tego pytania: {best_method[0].upper()}")
-    print(f"  Znalazła najwięcej kluczowych terminów")
+    print("  Znalazła najwięcej kluczowych terminów")
 
     # Pokaż różnice w odpowiedziach
     print("\n" + "=" * 80)

@@ -1,6 +1,7 @@
 """Manual test to verify error handling and edge cases."""
 
 from pathlib import Path
+
 from app.parsers.rag_anything_parser import RAGAnythingParser
 
 parser = RAGAnythingParser()

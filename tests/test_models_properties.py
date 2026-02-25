@@ -37,11 +37,11 @@ from app.models import (
 @settings(max_examples=100, deadline=None)
 def test_property_21_invalid_fields_rejected(page: int, chunk_index: int):
     """Property 21: Pydantic validation enforcement.
-    
+
     For any API request with invalid data (missing required fields, wrong types,
     out-of-range values), the system should reject the request and return detailed
     field-level error messages.
-    
+
     Validates: Requirements 6.1, 6.2, 6.5
     """
     # Negative page numbers should be rejected
@@ -55,7 +55,7 @@ def test_property_21_invalid_fields_rejected(page: int, chunk_index: int):
                 chunk_index=0,
             )
         assert "page" in str(exc_info.value).lower()
-    
+
     # Negative chunk_index should be rejected
     if chunk_index < 0:
         with pytest.raises(ValidationError) as exc_info:
@@ -67,7 +67,7 @@ def test_property_21_invalid_fields_rejected(page: int, chunk_index: int):
                 chunk_index=chunk_index,
             )
         assert "chunk_index" in str(exc_info.value).lower()
-    
+
     # Valid values should succeed
     if page >= 0 and chunk_index >= 0:
         chunk = TextChunk(
@@ -84,19 +84,19 @@ def test_property_21_invalid_fields_rejected(page: int, chunk_index: int):
 # Feature: pdf-rag-system, Property 22: Response serialization consistency
 @given(
     answer=st.text(min_size=1, max_size=1000),
-    processing_time=st.floats(min_value=0.0, max_value=100.0, allow_nan=False, allow_infinity=False),
+    processing_time=st.floats(
+        min_value=0.0, max_value=100.0, allow_nan=False, allow_infinity=False
+    ),
     num_sources=st.integers(min_value=0, max_value=10),
 )
 @settings(max_examples=100, deadline=None)
-def test_property_22_response_serialization(
-    answer: str, processing_time: float, num_sources: int
-):
+def test_property_22_response_serialization(answer: str, processing_time: float, num_sources: int):
     """Property 22: Response serialization consistency.
-    
+
     For any API response, the returned JSON should validate against the
     corresponding Pydantic response model schema, ensuring all required
     fields are present and types are correct.
-    
+
     Validates: Requirements 6.3
     """
     # Create sources
@@ -111,7 +111,7 @@ def test_property_22_response_serialization(
         )
         for i in range(num_sources)
     ]
-    
+
     # Create response
     response = MultimodalQueryResponse(
         answer=answer,
@@ -119,14 +119,14 @@ def test_property_22_response_serialization(
         processing_time=processing_time,
         modalities_used=["text"],
     )
-    
+
     # Serialize to JSON
     json_str = response.model_dump_json()
     json_dict = json.loads(json_str)
-    
+
     # Deserialize back
     response_restored = MultimodalQueryResponse.model_validate(json_dict)
-    
+
     # Verify round-trip consistency
     assert response_restored.answer == answer
     assert response_restored.processing_time == processing_time
@@ -139,7 +139,7 @@ def test_property_21_missing_required_fields():
     """Property 21: Missing required fields should be rejected."""
     with pytest.raises(ValidationError) as exc_info:
         TextChunk(chunk_id="test", doc_id="doc1")  # Missing content, page, chunk_index
-    
+
     error_str = str(exc_info.value).lower()
     assert "content" in error_str or "field required" in error_str
 
@@ -167,7 +167,7 @@ def test_property_22_nested_validation():
         chunk_index=0,
         visual_type="image",
     )
-    
+
     multimodal_chunk = MultimodalChunk(
         chunk_id="m1",
         doc_id="doc1",
@@ -176,11 +176,11 @@ def test_property_22_nested_validation():
         page=0,
         chunk_index=0,
     )
-    
+
     # Serialize and deserialize
     json_dict = multimodal_chunk.model_dump()
     restored = MultimodalChunk.model_validate(json_dict)
-    
+
     assert restored.text_content == "test content"
     assert len(restored.visual_elements) == 1
     assert restored.visual_elements[0].visual_type == "image"
@@ -191,18 +191,18 @@ def test_property_21_query_request_validation():
     # Valid request
     req = QueryRequest(question="test question", top_k=5, temperature=0.7)
     assert req.top_k == 5
-    
+
     # top_k out of range
     with pytest.raises(ValidationError):
         QueryRequest(question="test", top_k=0)  # Must be >= 1
-    
+
     with pytest.raises(ValidationError):
         QueryRequest(question="test", top_k=25)  # Must be <= 20
-    
+
     # temperature out of range
     with pytest.raises(ValidationError):
         QueryRequest(question="test", temperature=-0.1)  # Must be >= 0
-    
+
     with pytest.raises(ValidationError):
         QueryRequest(question="test", temperature=2.5)  # Must be <= 2.0
 
@@ -210,14 +210,10 @@ def test_property_21_query_request_validation():
 def test_property_22_parsed_document_serialization():
     """Property 22: ParsedDocument serializes with all modalities."""
     text_block = TextBlock(content="test", page=0, bbox=(0, 0, 100, 100))
-    image_block = ImageBlock(
-        image_data=b"image", page=0, bbox=(0, 0, 50, 50), format="png"
-    )
-    chart_block = ChartBlock(
-        image_data=b"chart", page=0, bbox=(0, 0, 75, 75), chart_type="bar"
-    )
+    image_block = ImageBlock(image_data=b"image", page=0, bbox=(0, 0, 50, 50), format="png")
+    chart_block = ChartBlock(image_data=b"chart", page=0, bbox=(0, 0, 75, 75), chart_type="bar")
     table_block = TableBlock(rows=[["a", "b"], ["c", "d"]], page=0, bbox=(0, 0, 80, 80))
-    
+
     doc = ParsedDocument(
         text_blocks=[text_block],
         images=[image_block],
@@ -226,13 +222,13 @@ def test_property_22_parsed_document_serialization():
         num_pages=1,
         metadata={"source": "test"},
     )
-    
+
     # Serialize
     json_dict = doc.model_dump()
-    
+
     # Deserialize
     restored = ParsedDocument.model_validate(json_dict)
-    
+
     assert len(restored.text_blocks) == 1
     assert len(restored.images) == 1
     assert len(restored.charts) == 1
@@ -249,13 +245,11 @@ def test_property_21_embedded_chunk_validation():
         page=0,
         chunk_index=0,
     )
-    
+
     # Valid embedding
-    embedded = EmbeddedChunk(
-        chunk=text_chunk, embedding=[0.1, 0.2, 0.3], modality="text"
-    )
+    embedded = EmbeddedChunk(chunk=text_chunk, embedding=[0.1, 0.2, 0.3], modality="text")
     assert len(embedded.embedding) == 3
-    
+
     # Empty embedding should still be valid (edge case)
     embedded_empty = EmbeddedChunk(chunk=text_chunk, embedding=[], modality="text")
     assert len(embedded_empty.embedding) == 0

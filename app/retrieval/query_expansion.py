@@ -17,6 +17,11 @@ class QueryExpander:
     - Caching: LRU cache with TTL
     """
 
+    MAX_HYDE_TOKENS = 200
+    MAX_MULTI_QUERY_TOKENS = 300
+    MAX_CACHE_SIZE = 1000
+    CACHE_EVICTION_KEEP = 800
+
     def __init__(
         self,
         llm_client: Any,
@@ -110,13 +115,13 @@ Passage:"""
             response = await self.llm_client.generate(
                 prompt=prompt,
                 temperature=0.7,
-                max_tokens=200,
+                max_tokens=self.MAX_HYDE_TOKENS,
             )
 
             hypothetical_doc = response.strip()
             logger.info("  HyDE - Generated hypothetical document:")
             logger.info(
-                f"    {hypothetical_doc[:200]}{'...' if len(hypothetical_doc) > 200 else ''}"
+                f"    {hypothetical_doc[: self.MAX_HYDE_TOKENS]}{'...' if len(hypothetical_doc) > self.MAX_HYDE_TOKENS else ''}"
             )
 
             # Return as list with single hypothetical document
@@ -156,7 +161,7 @@ Alternative 3:"""
             response = await self.llm_client.generate(
                 prompt=prompt,
                 temperature=0.8,
-                max_tokens=300,
+                max_tokens=self.MAX_MULTI_QUERY_TOKENS,
             )
 
             # Parse variations from response
@@ -197,7 +202,7 @@ Alternative 3:"""
 
         # Get HyDE hypothetical document
         hyde_results = await self.hyde_expand(query)
-        logger.info(f"  ✓ HyDE: Generated hypothetical document")
+        logger.info("  ✓ HyDE: Generated hypothetical document")
 
         # Get Multi-Query variations
         multi_results = await self.multi_query_expand(query, num_variations)
@@ -295,14 +300,9 @@ Alternative 3:"""
         self.cache[query_hash] = (expansions, time.time())
 
         # Simple cache size limit
-        if len(self.cache) > 1000:
-            # Remove oldest entries
-            sorted_items = sorted(
-                self.cache.items(),
-                key=lambda x: x[1][1],  # Sort by timestamp
-            )
-            # Keep newest 800
-            self.cache = dict(sorted_items[-800:])
+        if len(self.cache) > self.MAX_CACHE_SIZE:
+            sorted_items = sorted(self.cache.items(), key=lambda x: x[1][1])
+            self.cache = dict(sorted_items[-self.CACHE_EVICTION_KEEP :])
 
     def _hash_query(self, query: str) -> str:
         """Generate hash for query.

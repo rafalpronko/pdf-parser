@@ -1,6 +1,6 @@
 """FastAPI application entry point."""
 
-import logging
+import os
 import uuid
 from contextlib import asynccontextmanager
 from datetime import UTC, datetime
@@ -8,12 +8,11 @@ from datetime import UTC, datetime
 from fastapi import FastAPI, File, HTTPException, Request, UploadFile, status
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import JSONResponse, HTMLResponse, FileResponse
-import os
 
 from app.config import get_settings
-from app.logging_config import get_logger, set_request_id, clear_request_id, setup_logging
+from app.logging_config import clear_request_id, get_logger, set_request_id, setup_logging
 from app.models.document import DocumentInfo, DocumentMetadata, DocumentUploadResponse
 from app.models.error import ErrorResponse
 from app.models.query import QueryRequest, QueryResponse
@@ -34,7 +33,7 @@ query_service: QueryService | None = None
 
 
 @asynccontextmanager
-async def lifespan(app: FastAPI):
+async def lifespan(app: FastAPI):  # noqa: ARG001
     """Manage application lifespan - startup and shutdown."""
     # Startup
     global document_service, query_service
@@ -76,11 +75,22 @@ app = FastAPI(
 # Add CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # In production, specify allowed origins
+    allow_origins=settings.cors_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+# Security headers middleware
+@app.middleware("http")
+async def security_headers_middleware(request: Request, call_next):
+    """Add security headers to all responses."""
+    response = await call_next(request)
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["X-XSS-Protection"] = "1; mode=block"
+    return response
 
 
 # Request ID and error handling middleware
@@ -224,7 +234,7 @@ async def health_check():
     description="Upload a PDF file to be parsed, chunked, embedded, and stored in the knowledge base.",
 )
 async def upload_document(
-    request: Request,
+    request: Request,  # noqa: ARG001
     file: UploadFile = File(..., description="PDF file to upload"),
     tags: str = "",
     description: str = "",
@@ -308,7 +318,7 @@ async def upload_document(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to process document: {str(e)}",
-        )
+        ) from e
 
 
 @app.get(
@@ -362,7 +372,7 @@ async def list_documents(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to list documents: {str(e)}",
-        )
+        ) from e
 
 
 @app.get(
@@ -399,14 +409,14 @@ async def get_document(doc_id: str) -> DocumentInfo:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=str(e),
-        )
+        ) from e
 
     except Exception as e:
         logger.error(f"Error retrieving document '{doc_id}': {str(e)}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to retrieve document: {str(e)}",
-        )
+        ) from e
 
 
 @app.delete(
@@ -445,14 +455,14 @@ async def delete_document(doc_id: str):
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=str(e),
-        )
+        ) from e
 
     except Exception as e:
         logger.error(f"Error deleting document '{doc_id}': {str(e)}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to delete document: {str(e)}",
-        )
+        ) from e
 
 
 @app.post(
@@ -506,12 +516,12 @@ async def query_knowledge_base(
             raise HTTPException(
                 status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
                 detail="OpenAI API request timed out. Please try again.",
-            )
+            ) from e
 
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to process query: {str(e)}",
-        )
+        ) from e
 
 
 # Serve React Frontend (SPA)

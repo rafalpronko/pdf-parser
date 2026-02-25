@@ -1,13 +1,9 @@
 """Vector database storage using ChromaDB."""
 
 import logging
-from typing import Any, TYPE_CHECKING, TYPE_CHECKING
+from typing import Any
 
-if TYPE_CHECKING:
-    import chromadb
-    from chromadb.config import Settings as ChromaSettings
-
-from app.models.chunk import DocumentChunk, EmbeddedChunk
+from app.models.chunk import EmbeddedChunk
 
 logger = logging.getLogger(__name__)
 
@@ -240,10 +236,9 @@ class VectorStore:
                     content = results["documents"][0][i]
                     distance = results["distances"][0][i]
 
-                    # Convert distance to relevance score (0-1, higher is better)
-                    # ChromaDB returns cosine distance (0-2), convert to similarity
-                    relevance_score = 1.0 - (distance / 2.0)
-                    relevance_score = max(0.0, min(1.0, relevance_score))
+                    # Convert cosine distance to similarity score (0-1, higher is better)
+                    # ChromaDB cosine distance = 1 - cosine_similarity
+                    relevance_score = max(0.0, min(1.0, 1.0 - distance))
 
                     search_results.append(
                         SearchResult(

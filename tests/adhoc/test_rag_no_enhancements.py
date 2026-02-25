@@ -51,6 +51,7 @@ async def main():
     print("STEP 2: Clear Vector Store")
     print("=" * 80)
     from app.config import reload_settings
+
     settings = reload_settings()  # Reload to pick up env changes
 
     vector_store = VectorStore(
@@ -116,14 +117,14 @@ async def main():
     print("STEP 7: Results")
     print("=" * 80)
 
-    print(f"\n📝 Answer:")
+    print("\n📝 Answer:")
     print(f"{result.answer}")
 
-    print(f"\n📊 Metadata:")
+    print("\n📊 Metadata:")
     print(f"  - Processing time: {result.processing_time:.2f}s")
     print(f"  - Number of sources: {len(result.sources)}")
 
-    print(f"\n📚 Source References:")
+    print("\n📚 Source References:")
     for i, source in enumerate(result.sources, 1):
         print(f"\n  Source {i}:")
         print(f"    Filename: {source.filename}")
@@ -150,7 +151,7 @@ Składka lub jej pierwsza rata powinna być zapłacona przy zawarciu umowy lub p
         "polisie",
     ]
 
-    print(f"\n📋 Key phrases check:")
+    print("\n📋 Key phrases check:")
     found_count = 0
     for phrase in key_phrases:
         present = phrase.lower() in result.answer.lower()
@@ -159,7 +160,9 @@ Składka lub jej pierwsza rata powinna być zapłacona przy zawarciu umowy lub p
         if present:
             found_count += 1
 
-    print(f"\n{'✓ SUCCESS' if found_count >= 4 else '✗ FAILURE'}: Found {found_count}/{len(key_phrases)} key phrases")
+    print(
+        f"\n{'✓ SUCCESS' if found_count >= 4 else '✗ FAILURE'}: Found {found_count}/{len(key_phrases)} key phrases"
+    )
 
     print("\n" + "=" * 80)
     print("TEST COMPLETED")

@@ -7,7 +7,6 @@ from typing import Any
 
 from app.config import get_settings
 
-
 # Context variable for request ID tracking
 request_id_var: ContextVar[str | None] = ContextVar("request_id", default=None)
 
@@ -17,10 +16,10 @@ class RequestIdFilter(logging.Filter):
 
     def filter(self, record: logging.LogRecord) -> bool:
         """Add request_id to the log record.
-        
+
         Args:
             record: Log record to filter
-            
+
         Returns:
             True to allow the record to be logged
         """
@@ -43,19 +42,17 @@ class ColoredFormatter(logging.Formatter):
 
     def format(self, record: logging.LogRecord) -> str:
         """Format log record with colors.
-        
+
         Args:
             record: Log record to format
-            
+
         Returns:
             Formatted log string with colors
         """
         # Add color to level name
         levelname = record.levelname
         if levelname in self.COLORS:
-            record.levelname = (
-                f"{self.COLORS[levelname]}{levelname}{self.RESET}"
-            )
+            record.levelname = f"{self.COLORS[levelname]}{levelname}{self.RESET}"
 
         # Format the message
         formatted = super().format(record)
@@ -68,7 +65,7 @@ class ColoredFormatter(logging.Formatter):
 
 def setup_logging() -> None:
     """Configure logging for the application.
-    
+
     Sets up:
     - Console handler with colored output
     - Request ID tracking
@@ -123,10 +120,10 @@ def setup_logging() -> None:
 
 def get_logger(name: str) -> logging.Logger:
     """Get a logger with the specified name.
-    
+
     Args:
         name: Logger name (typically __name__)
-        
+
     Returns:
         Configured logger instance
     """
@@ -135,7 +132,7 @@ def get_logger(name: str) -> logging.Logger:
 
 def set_request_id(request_id: str) -> None:
     """Set the request ID for the current context.
-    
+
     Args:
         request_id: Request ID to set
     """
@@ -155,7 +152,7 @@ def log_progress(
     **kwargs: Any,
 ) -> None:
     """Log progress for long-running operations.
-    
+
     Args:
         logger: Logger instance
         operation: Operation name

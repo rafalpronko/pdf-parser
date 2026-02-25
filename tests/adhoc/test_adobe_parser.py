@@ -14,7 +14,7 @@ test_pdf = Path(
     "data/raw/WARTA_OWU_AutoCasco_Standard_ACS_C6201_IPID_dla_umow_zawieranych_do_31.03.2022.pdf"
 )
 
-print(f"Testing Adobe PDF Extract API Parser")
+print("Testing Adobe PDF Extract API Parser")
 print(f"File: {test_pdf}")
 print(f"File exists: {test_pdf.exists()}")
 
@@ -29,10 +29,10 @@ print("✓ Parser initialized")
 # Parse PDF
 print("\n2. Parsing PDF...")
 result = parser.parse_pdf(test_pdf)
-print(f"✓ Parsing complete!")
+print("✓ Parsing complete!")
 
 # Show results
-print(f"\n3. Results:")
+print("\n3. Results:")
 print(f"   - Pages: {result.num_pages}")
 print(f"   - Text blocks: {len(result.text_blocks)}")
 print(f"   - Images: {len(result.images)}")

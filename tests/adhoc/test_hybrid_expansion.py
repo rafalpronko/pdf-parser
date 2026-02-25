@@ -89,6 +89,7 @@ async def test_hybrid_rag():
 
     os.environ["EXPANSION_METHOD"] = "hybrid"
     from app.config import reload_settings
+
     reload_settings()
 
     query_service = QueryService()
@@ -101,10 +102,10 @@ async def test_hybrid_rag():
         )
     )
 
-    print(f"\n📝 Answer:")
+    print("\n📝 Answer:")
     print(f"{result.answer}")
 
-    print(f"\n📊 Stats:")
+    print("\n📊 Stats:")
     print(f"  Processing time: {result.processing_time:.2f}s")
     print(f"  Sources: {len(result.sources)}")
 

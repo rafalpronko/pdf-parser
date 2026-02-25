@@ -56,7 +56,7 @@ async def main():
 
     hyde_result = await hyde_expander.expand(question)
 
-    print(f"\nGenerated hypothetical document:")
+    print("\nGenerated hypothetical document:")
     print(f"  {hyde_result[0]}")
 
     # Comparison
@@ -74,7 +74,7 @@ async def main():
     print("  ✓ Generates hypothetical answer")
     print("  ✓ Searches for documents similar to the answer")
     print("  ✓ Works better for 'answer-seeking' queries")
-    print(f"  - Generated 1 hypothetical document")
+    print("  - Generated 1 hypothetical document")
 
     print("\n" + "=" * 80)
     print("RECOMMENDATION")

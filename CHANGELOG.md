@@ -5,6 +5,63 @@ Wszystkie istotne zmiany w projekcie będą dokumentowane w tym pliku.
 Format bazuje na [Keep a Changelog](https://keepachangelog.com/pl/1.0.0/),
 a projekt stosuje [Semantic Versioning](https://semver.org/lang/pl/).
 
+## [1.3.0] - 2026-02-25
+
+### Bezpieczenstwo
+- **SecretStr fix w klientach OpenAI**: Naprawienie krytycznego bugu - vlm_client.py, multimodal_embedder.py i openai_pdf_parser.py przekazywaly obiekt `SecretStr` zamiast `.get_secret_value()` do OpenAI SDK
+- **Security headers middleware**: Dodanie naglowkow X-Content-Type-Options, X-Frame-Options, X-XSS-Protection do wszystkich odpowiedzi API
+
+### Naprawiono
+- **ChromaDB distance→similarity**: Poprawienie blednego wzoru `1 - distance/2` na poprawny `1 - distance` (cosine distance → cosine similarity)
+- **BM25 tokenizacja**: Dodanie usuwania interpunkcji, filtrowania stop words (30+ slow) i minimalnej dlugosci tokenu (2 znaki)
+- **Reranker normalizacja**: Zmiana arbitralnego fallback `0.5` na `1.0` gdy wszystkie scores sa rowne (rownie relevantne = max score)
+- **RRF duplikacja kodu**: Wyodrebnienie wspolnej funkcji `reciprocal_rank_fusion` do `app/retrieval/rrf.py`, usuniecie duplikatu z query_service.py
+- **Magic numbers**: Wyekstrahowanie stalych MAX_HYDE_TOKENS, MAX_MULTI_QUERY_TOKENS, MAX_CACHE_SIZE, CACHE_EVICTION_KEEP w QueryExpander
+
+### Dodano
+- `app/retrieval/rrf.py`: Wspolna implementacja Reciprocal Rank Fusion uzywana przez hybrid_search i query_service
+
+### Zmieniono
+- **Wersja projektu**: 1.2.2 -> 1.3.0
+- Usuniecie nieuzywanych importow `TYPE_CHECKING` z vector_store.py i reranker.py
+
+## [1.2.2] - 2026-02-24
+
+### Naprawiono
+- **EmbeddedChunk modality**: Dodanie brakujacego pola `modality="text"` we wszystkich fixture'ach tworzacych `EmbeddedChunk` (test_vector_store.py, test_vector_store_properties.py)
+- **Test API ChromaDB conflict**: Naprawienie konfliktu embedding function ChromaDB przez mockowanie lifespan w test_api_properties.py (zamiast inicjalizacji prawdziwych serwisow)
+- **Mock settings niekompletne**: Dodanie brakujacych atrybutow `text_collection`, `bm25_k1`, `bm25_b`, `enable_hybrid_search` oraz poprawnego `openai_api_key` (SecretStr mock) w test_document_service_properties.py
+- **Mock chunker chunk_with_structure**: Dodanie mockowania `chunk_with_structure` obok `chunk_document` w test_document_service_properties.py (produkcyjny kod uzywa `chunk_with_structure`)
+- **Parser numpy incompatibility**: Oznaczenie 5 testow parsera jako `xfail` z powodu pre-existing niezgodnosci numpy 2.0 z imgaug/paddleocr (`np.sctypes` removed)
+
+### Zmieniono
+- **Wersja projektu**: 1.2.1 -> 1.2.2
+
+## [1.2.1] - 2026-02-24
+
+### Bezpieczenstwo
+- **CORS configurable origins**: Zamiana hardkodowanego `allow_origins=["*"]` na konfigurowalne `settings.cors_origins` (domyslnie localhost:3000, localhost:8000)
+- **Path traversal protection**: Dodanie walidacji `resolve().relative_to()` w `FileStorageService.get_storage_path()` zapobiegajacej atakowi path traversal
+- **SecretStr dla API key**: Zmiana `openai_api_key` z `str | None` na `SecretStr | None` -- klucz API nie jest widoczny w logach/repr
+- **raise from**: Dodanie `from e` do wszystkich `raise HTTPException` w blokach `except` (app/main.py, app/storage/file_storage.py)
+
+### Dodano
+- `app/models/search.py`: Zunifikowany model `SearchResult` (dataclass) jako single source of truth dla wynikow wyszukiwania
+- `tests/test_security.py`: Testy bezpieczenstwa (path traversal, CORS, SecretStr)
+- `tests/test_search_result_model.py`: Testy modelu SearchResult (unit + property-based z Hypothesis)
+- `cors_origins` field w Settings (konfigurowany przez `CORS_ORIGINS` env var)
+
+### Naprawiono
+- BM25 tokenizacja: Dodanie usuwania interpunkcji i filtrowania krotkich tokenow (min 2 znaki)
+- `zip()` z `strict=True` w krytycznych miejscach (bm25_index, document_service, query_service)
+- Niekompletne mock fixtures w testach (brakujace atrybuty settings, chunk_with_structure)
+- Test `hyde_expand` -- aktualizacja oczekiwan do `list[str]` (zgodnie z aktualnym API)
+
+### Zmieniono
+- **Wersja projektu**: 1.2.0 -> 1.2.1
+- Magic numbers w `query_expansion.py` wyekstrahowane do stalych klasy (`MAX_CACHE_SIZE`, `CACHE_EVICTION_KEEP`)
+- Ulepszona instrukcja HyDE prompt (bardziej specyficzna, zachowuje jezyk pytania)
+
 ## [1.2.0] - 2025-12-29
 
 ### Dodano

@@ -99,7 +99,11 @@ class DocumentService:
         self._chunk_overlap = self.settings.chunk_overlap
 
         self.openai_client = openai_client or OpenAIClient(
-            api_key=self.settings.openai_api_key or "",
+            api_key=(
+                self.settings.openai_api_key.get_secret_value()
+                if self.settings.openai_api_key
+                else ""
+            ),
             model=self.settings.openai_model,
             embedding_model=self.settings.openai_embedding_model,
         )
@@ -294,7 +298,7 @@ class DocumentService:
                 # Persist BM25 index
                 try:
                     self.bm25_index.save()
-                    logger.info(f"BM25 index saved successfully")
+                    logger.info("BM25 index saved successfully")
                 except Exception as e:
                     logger.warning(f"Failed to save BM25 index: {e}")
 
@@ -384,7 +388,7 @@ class DocumentService:
         # Combine chunks with embeddings
         embedded_chunks = [
             EmbeddedChunk(chunk=chunk, embedding=embedding, modality="text")
-            for chunk, embedding in zip(chunks, embeddings)
+            for chunk, embedding in zip(chunks, embeddings, strict=True)
         ]
 
         return embedded_chunks

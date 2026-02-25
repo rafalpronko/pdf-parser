@@ -30,7 +30,7 @@ from adobe.pdfservices.operation.pdfjobs.result.extract_pdf_result import (
     ExtractPDFResult,
 )
 
-from app.models.parsing import ImageBlock, ParsedDocument, TableBlock, TextBlock
+from app.models.parsing import ParsedDocument, TableBlock, TextBlock
 
 logger = logging.getLogger(__name__)
 
@@ -124,9 +124,7 @@ class AdobePDFParser:
             # Submit job and get result
             logger.info("  Submitting extraction job...")
             location = pdf_services.submit(extract_pdf_job)
-            pdf_services_response = pdf_services.get_job_result(
-                location, ExtractPDFResult
-            )
+            pdf_services_response = pdf_services.get_job_result(location, ExtractPDFResult)
 
             # Get result asset
             logger.info("  Downloading extraction results...")
@@ -140,9 +138,7 @@ class AdobePDFParser:
 
             # Extract and parse JSON from ZIP
             logger.info("  Parsing extraction results...")
-            parsed_doc = self._parse_extraction_results(
-                Path(temp_zip.name), file_path
-            )
+            parsed_doc = self._parse_extraction_results(Path(temp_zip.name), file_path)
 
             # Clean up temp file
             os.unlink(temp_zip.name)
@@ -159,9 +155,7 @@ class AdobePDFParser:
             logger.error(f"Adobe PDF Extract API error: {e}")
             raise
 
-    def _parse_extraction_results(
-        self, zip_path: Path, original_pdf: Path
-    ) -> ParsedDocument:
+    def _parse_extraction_results(self, zip_path: Path, original_pdf: Path) -> ParsedDocument:
         """Parse Adobe Extract API results from ZIP file.
 
         Args:

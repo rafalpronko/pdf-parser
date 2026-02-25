@@ -65,7 +65,7 @@ async def debug_reranking():
         print(f"    Content: {result.content[:120]}...")
 
         if is_target:
-            print(f"    PEŁNA TREŚĆ:")
+            print("    PEŁNA TREŚĆ:")
             print(f"    {result.content[:300]}...")
 
         print()
@@ -84,7 +84,8 @@ async def debug_reranking():
     print("STEP 2: Reranking Analysis")
     print("=" * 80)
 
-    from app.retrieval.reranker import CrossEncoderReranker, SearchResult as RerankerSearchResult
+    from app.retrieval.reranker import CrossEncoderReranker
+    from app.retrieval.reranker import SearchResult as RerankerSearchResult
 
     reranker = CrossEncoderReranker(
         model_name=settings.reranker_model,
@@ -114,7 +115,7 @@ async def debug_reranking():
         top_k=10,
     )
 
-    print(f"\nTop 10 PO rerankingu:\n")
+    print("\nTop 10 PO rerankingu:\n")
 
     reranked_target_position = None
 
@@ -135,19 +136,17 @@ async def debug_reranking():
     print("=" * 80)
 
     if target_chunk_position:
-        print(f"\n✓ Chunk z 'Pojazd (silnikowy' był na pozycji {target_chunk_position} przed rerankingiem")
+        print(
+            f"\n✓ Chunk z 'Pojazd (silnikowy' był na pozycji {target_chunk_position} przed rerankingiem"
+        )
 
         if reranked_target_position:
-            print(
-                f"✓ Po rerankingu przesunął się na pozycję {reranked_target_position}"
-            )
+            print(f"✓ Po rerankingu przesunął się na pozycję {reranked_target_position}")
             if reranked_target_position > 5:
                 print("  ⚠ To wciąż poza top-5 używanym domyślnie!")
         else:
             print("✗ Po rerankingu WYPADŁ z top-10!")
-            print(
-                "  Problem: Cross-encoder uznał inne chunki za bardziej relevantne"
-            )
+            print("  Problem: Cross-encoder uznał inne chunki za bardziej relevantne")
     else:
         print("✗ Chunk z 'Pojazd (silnikowy' NIE JEST w top-20 vector search!")
         print("  Problem: Query expansion nie generuje odpowiednich zapytań")

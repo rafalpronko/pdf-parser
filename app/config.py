@@ -2,13 +2,13 @@
 
 from pathlib import Path
 
-from pydantic import Field, field_validator
+from pydantic import Field, SecretStr, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
     """Application settings loaded from environment variables.
-    
+
     All settings are validated at startup. Missing required settings
     or invalid values will cause the application to fail fast with
     clear error messages.
@@ -17,13 +17,17 @@ class Settings(BaseSettings):
     # API Settings
     api_title: str = Field(default="RAG-Anything Multimodal System", description="API title")
     api_version: str = Field(default="2.0.0", description="API version")
+    cors_origins: list[str] = Field(
+        default=["http://localhost:3000", "http://localhost:8000"],
+        description="Allowed CORS origins",
+    )
 
     # LLM Settings
     llm_provider: str = Field(
         default="openai",
         description="LLM provider (openai, anthropic, local)",
     )
-    openai_api_key: str | None = Field(default=None, description="OpenAI API key")
+    openai_api_key: SecretStr | None = Field(default=None, description="OpenAI API key")
     openai_model: str = Field(
         default="gpt-4o-mini",
         description="OpenAI model for text generation",
@@ -233,7 +237,7 @@ class Settings(BaseSettings):
 
     @field_validator("chunk_overlap")
     @classmethod
-    def validate_chunk_overlap(cls, v: int, info) -> int:
+    def validate_chunk_overlap(cls, v: int, info) -> int:  # noqa: ARG003
         """Ensure chunk overlap is less than chunk size."""
         # Note: chunk_size might not be set yet during validation
         # This will be checked in model_post_init if needed
@@ -248,9 +252,7 @@ class Settings(BaseSettings):
         valid_methods = {"hyde", "multi-query", "hybrid", "none"}
         v_lower = v.lower()
         if v_lower not in valid_methods:
-            raise ValueError(
-                f"expansion_method must be one of {valid_methods}, got '{v}'"
-            )
+            raise ValueError(f"expansion_method must be one of {valid_methods}, got '{v}'")
         return v_lower
 
     @field_validator("chunking_strategy")
@@ -260,9 +262,7 @@ class Settings(BaseSettings):
         valid_strategies = {"fixed", "semantic", "sentence-window"}
         v_lower = v.lower()
         if v_lower not in valid_strategies:
-            raise ValueError(
-                f"chunking_strategy must be one of {valid_strategies}, got '{v}'"
-            )
+            raise ValueError(f"chunking_strategy must be one of {valid_strategies}, got '{v}'")
         return v_lower
 
     @field_validator("log_level")
@@ -272,31 +272,27 @@ class Settings(BaseSettings):
         valid_levels = {"DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"}
         v_upper = v.upper()
         if v_upper not in valid_levels:
-            raise ValueError(
-                f"log_level must be one of {valid_levels}, got '{v}'"
-            )
+            raise ValueError(f"log_level must be one of {valid_levels}, got '{v}'")
         return v_upper
 
-    @field_validator("openai_api_key")
+    @field_validator("openai_api_key", mode="before")
     @classmethod
-    def validate_api_key(cls, v: str | None) -> str | None:
+    def validate_api_key(cls, v: str | SecretStr | None) -> str | None:
         """Ensure API key is not empty and has reasonable format if provided."""
         if v is None:
             return v
-        if v.strip() == "":
+        # Extract string value from SecretStr if needed
+        raw = v.get_secret_value() if isinstance(v, SecretStr) else v
+        if raw.strip() == "":
             raise ValueError("openai_api_key cannot be empty string")
-        if v == "your-openai-api-key-here":
+        if raw == "your-openai-api-key-here":
             raise ValueError(
-                "openai_api_key must be set to a valid API key, "
-                "not the placeholder value"
+                "openai_api_key must be set to a valid API key, not the placeholder value"
             )
         # OpenAI keys typically start with 'sk-'
-        if not v.startswith("sk-"):
-            raise ValueError(
-                "openai_api_key should start with 'sk-' "
-                "(OpenAI API key format)"
-            )
-        return v
+        if not raw.startswith("sk-"):
+            raise ValueError("openai_api_key should start with 'sk-' (OpenAI API key format)")
+        return raw
 
     @field_validator("upload_dir", mode="before")
     @classmethod
@@ -343,10 +339,10 @@ _settings: Settings | None = None
 
 def get_settings() -> Settings:
     """Get the global settings instance.
-    
+
     Returns:
         Settings: The application settings
-        
+
     Raises:
         ValueError: If settings validation fails
     """
@@ -359,7 +355,7 @@ def get_settings() -> Settings:
 # Convenience function to reload settings (useful for testing)
 def reload_settings() -> Settings:
     """Reload settings from environment.
-    
+
     Returns:
         Settings: The reloaded application settings
     """

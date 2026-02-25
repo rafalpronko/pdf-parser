@@ -1,6 +1,7 @@
 """Tests for VectorStore implementation."""
 
 import pytest
+
 from app.models.chunk import DocumentChunk, EmbeddedChunk
 from app.storage.vector_store import VectorStore
 
@@ -32,7 +33,7 @@ def sample_embedded_chunks():
         )
         # Create simple embeddings (in reality these would be from a model)
         embedding = [float(i) * 0.1] * 384  # 384-dimensional embedding
-        chunks.append(EmbeddedChunk(chunk=chunk, embedding=embedding))
+        chunks.append(EmbeddedChunk(chunk=chunk, embedding=embedding, modality="text"))
     return chunks
 
 
@@ -194,7 +195,7 @@ async def test_count_chunks_all(vector_store, sample_embedded_chunks):
             metadata={},
         )
         embedding = [float(i) * 0.2] * 384
-        more_chunks.append(EmbeddedChunk(chunk=chunk, embedding=embedding))
+        more_chunks.append(EmbeddedChunk(chunk=chunk, embedding=embedding, modality="text"))
 
     await vector_store.add_embeddings(
         embeddings=more_chunks,
@@ -234,7 +235,7 @@ async def test_search_with_doc_filter(vector_store, sample_embedded_chunks):
             metadata={},
         )
         embedding = [float(i) * 0.3] * 384
-        more_chunks.append(EmbeddedChunk(chunk=chunk, embedding=embedding))
+        more_chunks.append(EmbeddedChunk(chunk=chunk, embedding=embedding, modality="text"))
 
     await vector_store.add_embeddings(
         embeddings=more_chunks,

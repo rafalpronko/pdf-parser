@@ -1,6 +1,6 @@
 """Chunk-related Pydantic models for multimodal content."""
 
-from typing import Any, Union
+from typing import Any
 
 from pydantic import BaseModel, Field
 
@@ -44,7 +44,7 @@ class MultimodalChunk(BaseModel):
 class EmbeddedChunk(BaseModel):
     """Chunk with embedding vector."""
 
-    chunk: Union[TextChunk, VisualChunk, MultimodalChunk]
+    chunk: TextChunk | VisualChunk | MultimodalChunk
     embedding: list[float]
     modality: str = Field(description="Modality: text, visual, or multimodal")
 
