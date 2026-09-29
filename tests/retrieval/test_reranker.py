@@ -6,6 +6,7 @@ Property 2: Reranking retrieves more candidates
 Property 29: Reranking score normalization
 """
 
+import pytest
 from hypothesis import given, settings
 from hypothesis import strategies as st
 
@@ -165,3 +166,118 @@ class TestCrossEncoderRerankerUnit:
         assert normalized[0] == 0.0  # min
         assert normalized[2] == 1.0  # max
         assert 0.0 < normalized[1] < 1.0  # middle
+
+
+class FakeCrossEncoder:
+    """Stand-in for sentence_transformers.CrossEncoder with fixed per-text scores."""
+
+    def __init__(self, scores_by_text: dict[str, float]):
+        self.scores_by_text = scores_by_text
+        self.predict_calls: list[list[list[str]]] = []
+
+    def predict(self, pairs, batch_size=32):  # noqa: ARG002
+        self.predict_calls.append(pairs)
+        return [self.scores_by_text[text] for _, text in pairs]
+
+
+def _make_reranker(monkeypatch, model, enable_caching: bool = True) -> CrossEncoderReranker:
+    """Build a reranker without loading a real cross-encoder model."""
+    monkeypatch.setattr(CrossEncoderReranker, "_init_model", lambda _self: None)
+    reranker = CrossEncoderReranker(device="cpu", enable_caching=enable_caching)
+    reranker.model = model
+    return reranker
+
+
+def _citation_chunks() -> list[SearchResult]:
+    """Chunks shaped like VectorStore output: doc_id/page/chunk_index are fields."""
+    return [
+        SearchResult(
+            chunk_id="c-alpha-3",
+            content="alpha content",
+            score=0.9,
+            doc_id="doc-alpha",
+            page=3,
+            chunk_index=0,
+            metadata={"section": "Intro", "embedding_model": "m"},
+        ),
+        SearchResult(
+            chunk_id="c-beta-7",
+            content="beta content",
+            score=0.8,
+            doc_id="doc-beta",
+            page=7,
+            chunk_index=4,
+            metadata={"section": "Methods"},
+        ),
+        SearchResult(
+            chunk_id="c-alpha-12",
+            content="gamma content",
+            score=0.7,
+            doc_id="doc-alpha",
+            page=12,
+            chunk_index=9,
+            metadata={"section": "Results"},
+        ),
+    ]
+
+
+class TestRerankerPreservesCitationFields:
+    """Regression tests: reranking must not drop doc_id, page or chunk_index."""
+
+    @pytest.mark.parametrize("enable_caching", [True, False])
+    def test_rerank_preserves_fields_and_orders_by_score(self, monkeypatch, enable_caching):
+        """Reranked results keep every field except score and follow model scores."""
+        model = FakeCrossEncoder({"alpha content": 1.0, "beta content": -2.0, "gamma content": 5.0})
+        reranker = _make_reranker(monkeypatch, model, enable_caching=enable_caching)
+        chunks = _citation_chunks()
+        originals = {c.chunk_id: c for c in _citation_chunks()}
+
+        reranked = reranker.rerank("query", chunks, top_k=3)
+
+        assert len(model.predict_calls) == 1
+        assert [r.chunk_id for r in reranked] == ["c-alpha-12", "c-alpha-3", "c-beta-7"]
+        assert [r.score for r in reranked] == pytest.approx([1.0, 3.0 / 7.0, 0.0])
+
+        for result in reranked:
+            original = originals[result.chunk_id]
+            assert result.doc_id == original.doc_id
+            assert result.page == original.page
+            assert result.chunk_index == original.chunk_index
+            assert result.content == original.content
+            assert result.metadata == {
+                **original.metadata,
+                "original_score": original.score,
+                "reranking_score": result.score,
+            }
+
+        # Input results are not mutated
+        for chunk in chunks:
+            original = originals[chunk.chunk_id]
+            assert chunk.score == original.score
+            assert chunk.metadata == original.metadata
+
+    def test_rerank_preserves_fields_on_cached_scores(self, monkeypatch):
+        """Scores served from the cache still yield fully populated results."""
+        model = FakeCrossEncoder({"alpha content": 1.0, "beta content": -2.0, "gamma content": 5.0})
+        reranker = _make_reranker(monkeypatch, model, enable_caching=True)
+
+        reranker.rerank("query", _citation_chunks(), top_k=3)
+        reranked = reranker.rerank("query", _citation_chunks(), top_k=2)
+
+        # Second call is served entirely from cache
+        assert len(model.predict_calls) == 1
+        assert [(r.chunk_id, r.doc_id, r.page, r.chunk_index) for r in reranked] == [
+            ("c-alpha-12", "doc-alpha", 12, 9),
+            ("c-alpha-3", "doc-alpha", 3, 0),
+        ]
+
+    def test_fallback_preserves_fields(self, monkeypatch):
+        """Without a model, original order and all fields are kept."""
+        reranker = _make_reranker(monkeypatch, None)
+
+        reranked = reranker.rerank("query", _citation_chunks(), top_k=2)
+
+        assert [(r.chunk_id, r.doc_id, r.page, r.chunk_index, r.metadata) for r in reranked] == [
+            ("c-alpha-3", "doc-alpha", 3, 0, {"section": "Intro", "embedding_model": "m"}),
+            ("c-beta-7", "doc-beta", 7, 4, {"section": "Methods"}),
+        ]

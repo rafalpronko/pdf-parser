@@ -49,7 +49,8 @@ class QueryService:
             openai_client: OpenAI client for embeddings and generation
             vector_store: Vector store for similarity search
             document_service: Document service for metadata lookup
-            bm25_index: BM25 index for keyword search
+            bm25_index: BM25 index for keyword search (defaults to
+                document_service.bm25_index so both services share one index)
             hybrid_search: Hybrid search engine
             query_expander: Query expansion component
             reranker: Cross-encoder reranker
@@ -74,21 +75,30 @@ class QueryService:
 
         # Initialize BM25 index if hybrid search is enabled
         if self.settings.enable_hybrid_search:
-            from pathlib import Path
+            # Share the DocumentService's (already loaded) index so uploads and
+            # deletes are immediately visible to keyword search
+            if bm25_index is None and document_service is not None:
+                bm25_index = getattr(document_service, "bm25_index", None)
 
-            bm25_persist_path = Path(self.settings.vector_db_path) / "bm25_index.json"
-            self.bm25_index = bm25_index or BM25Index(
-                persist_path=bm25_persist_path,
-                k1=self.settings.bm25_k1,
-                b=self.settings.bm25_b,
-            )
+            if bm25_index is not None:
+                self.bm25_index = bm25_index
+                logger.info("Using shared BM25 index for hybrid search")
+            else:
+                from pathlib import Path
 
-            # Try to load existing index
-            try:
-                self.bm25_index.load()
-                logger.info("Loaded BM25 index for hybrid search")
-            except Exception as e:
-                logger.warning(f"Could not load BM25 index: {e}")
+                bm25_persist_path = Path(self.settings.vector_db_path) / "bm25_index.json"
+                self.bm25_index = BM25Index(
+                    persist_path=bm25_persist_path,
+                    k1=self.settings.bm25_k1,
+                    b=self.settings.bm25_b,
+                )
+
+                # Try to load existing index
+                try:
+                    self.bm25_index.load()
+                    logger.info("Loaded BM25 index for hybrid search")
+                except Exception as e:
+                    logger.warning(f"Could not load BM25 index: {e}")
 
             # Initialize hybrid search engine
             self.hybrid_search = hybrid_search or HybridSearchEngine(

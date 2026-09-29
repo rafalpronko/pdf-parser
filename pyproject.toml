@@ -1,6 +1,6 @@
 [project]
 name = "pdf-rag-system"
-version = "1.3.1"
+version = "1.3.2"
 description = "Universal PDF parsing and knowledge base system with RAG capabilities"
 readme = "README.md"
 requires-python = ">=3.11"
@@ -40,6 +40,17 @@ dev = [
     "pytest-cov>=4.1.0",
     "hypothesis>=6.98.0",
     "ruff>=0.1.0",
+]
+# MinerU PDF parser used by RAGAnythingParser. The "cpu" extra pulls in
+# paddleocr/paddlepaddle required by the "lite" model mode. Install: uv sync --extra dev --extra mineru
+# paddleocr 2.7.3 (imgaug, opencv 4.6) only works with NumPy 1.x and paddlepaddle imports
+# setuptools without declaring it on 3.11. NumPy 1.x has no Python 3.13+ wheels, so the
+# extra is limited to Python < 3.13. uv locks extras together with the base dependencies,
+# so on Python < 3.13 uv.lock pins numpy 1.26.x for every install.
+mineru = [
+    "magic-pdf[cpu]==0.6.1; python_version < '3.13'",
+    "numpy<2; python_version < '3.13'",
+    "setuptools; python_version < '3.13'",
 ]
 
 [build-system]
