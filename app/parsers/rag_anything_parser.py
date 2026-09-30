@@ -89,8 +89,8 @@ class RAGAnythingParser:
         except ImportError as e:
             error_msg = (
                 f"MinerU is required but not available: {e}\n"
-                "Install the optional 'mineru' extra (magic-pdf 0.6.1, Python < 3.13) with: "
-                "uv sync --extra dev --extra mineru (or: uv pip install -e '.[mineru]')"
+                "Install MinerU (magic-pdf 0.6.1, Python < 3.13) manually with: "
+                'uv pip install "magic-pdf[cpu]==0.6.1" "numpy<2" setuptools'
             )
             logger.error(error_msg)
             raise ImportError(error_msg) from e

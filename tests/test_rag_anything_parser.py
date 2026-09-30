@@ -10,20 +10,14 @@ import hashlib
 import logging
 import os
 import sys
-import tomllib
 from pathlib import Path
 from typing import Any
 
 import pytest
-from packaging.markers import Marker
-from packaging.requirements import Requirement
-from packaging.version import Version
 
 from app.models.parsing import ParsedDocument
 from app.parsers.rag_anything_parser import RAGAnythingParser
 from app.processing.chunker import SemanticChunker
-
-REPO_ROOT = Path(__file__).resolve().parents[1]
 
 FIGURE_BYTES = b"\xff\xd8\xff\xe0 figure crop \xff\xd9"
 TABLE_BYTES = b"\xff\xd8\xff\xe0 table crop \xff\xd9"
@@ -503,46 +497,5 @@ def test_missing_mineru_raises_import_error_with_install_hint(monkeypatch: pytes
     monkeypatch.setenv("MINERU_MODEL_SOURCE", "")
     monkeypatch.delenv("MINERU_MODEL_SOURCE")
 
-    with pytest.raises(ImportError, match="--extra mineru"):
+    with pytest.raises(ImportError, match="magic-pdf\\[cpu\\]==0.6.1"):
         RAGAnythingParser()
-
-
-# paddleocr 2.7.3 (imgaug, opencv-python 4.6) fails to import under NumPy 2 and paddlepaddle
-# imports setuptools without declaring it on 3.11; magic-pdf then exits in pipe_analyze.
-MINERU_PYTHONS = ["3.11", "3.12"]
-
-
-def marker_env(python_version: str) -> dict[str, str]:
-    return {"python_version": python_version, "python_full_version": f"{python_version}.0"}
-
-
-@pytest.mark.parametrize("python_version", MINERU_PYTHONS)
-def test_mineru_extra_declares_a_working_paddleocr_stack(python_version: str):
-    pyproject = tomllib.loads((REPO_ROOT / "pyproject.toml").read_text(encoding="utf-8"))
-    requirements = [Requirement(r) for r in pyproject["project"]["optional-dependencies"]["mineru"]]
-    env = marker_env(python_version)
-    active = {r.name: r for r in requirements if r.marker is None or r.marker.evaluate(env)}
-
-    assert str(active["magic-pdf"].specifier) == "==0.6.1"
-    assert "cpu" in active["magic-pdf"].extras
-    assert active["numpy"].specifier.contains("1.26.4")
-    assert not active["numpy"].specifier.contains("2.0.0")
-    assert "setuptools" in active
-
-
-@pytest.mark.parametrize("python_version", MINERU_PYTHONS)
-def test_lockfile_resolves_numpy_1_for_mineru_pythons(python_version: str):
-    lock = tomllib.loads((REPO_ROOT / "uv.lock").read_text(encoding="utf-8"))
-    env = marker_env(python_version)
-    numpy_versions = [
-        package["version"]
-        for package in lock["package"]
-        if package["name"] == "numpy"
-        and (
-            "resolution-markers" not in package
-            or any(Marker(m).evaluate(env) for m in package["resolution-markers"])
-        )
-    ]
-
-    assert numpy_versions
-    assert all(Version(v) < Version("2") for v in numpy_versions)

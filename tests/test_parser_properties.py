@@ -21,7 +21,7 @@ from app.parsers.rag_anything_parser import RAGAnythingParser
 # Hermetic parser tests live in tests/test_rag_anything_parser.py.
 pytestmark = pytest.mark.skipif(
     importlib.util.find_spec("magic_pdf") is None,
-    reason="MinerU (magic-pdf) not installed; install with: uv sync --extra dev --extra mineru",
+    reason="MinerU (magic-pdf) not installed; see README (manual MinerU install)",
 )
 
 

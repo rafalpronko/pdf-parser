@@ -5,6 +5,14 @@ Wszystkie istotne zmiany w projekcie będą dokumentowane w tym pliku.
 Format bazuje na [Keep a Changelog](https://keepachangelog.com/pl/1.0.0/),
 a projekt stosuje [Semantic Versioning](https://semver.org/lang/pl/).
 
+## [1.3.3] - 2026-09-30
+
+### Zmieniono
+- **Wersja projektu**: 1.3.2 -> 1.3.3
+- **Powrot do NumPy 2.x**: usuniety opcjonalny extra `mineru` z `pyproject.toml`. uv rozwiazuje extras razem z baza, wiec extra przypinal numpy 1.26.x dla wszystkich instalacji na Pythonie 3.11/3.12. `uv.lock` znowu zawiera tylko numpy 2.3.5 (zaleznosci takie jak w 1.3.1)
+- MinerU instaluje sie recznie (poza lockiem): `uv pip install "magic-pdf[cpu]==0.6.1" "numpy<2" setuptools` — opis w README i w komunikacie `ImportError` parsera. Kolejne `uv sync` przywraca numpy 2.x i usuwa te pakiety
+- Usuniete testy sprawdzajace extra `mineru` w `pyproject.toml`/`uv.lock`
+
 ## [1.3.2] - 2026-09-29
 
 ### Bezpieczenstwo
