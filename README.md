@@ -45,6 +45,13 @@ uv venv
 source .venv/bin/activate  # On Windows: .venv\Scripts\activate
 uv pip install -e ".[dev]"
 
+# Install the MinerU PDF parser (magic-pdf 0.6.1, required for document uploads).
+# Not part of pyproject/uv.lock: paddleocr needs NumPy < 2, which would pin numpy for everyone.
+# Python 3.11/3.12 only. PaddleOCR downloads its models from paddleocr.bj.bcebos.com
+# on the first upload (cached in ~/.paddleocr), so that host must be reachable.
+# Note: a later `uv sync` restores numpy 2.x and removes these packages.
+uv pip install "magic-pdf[cpu]==0.6.1" "numpy<2" setuptools
+
 # Copy environment template and configure
 cp .env.example .env
 # Edit .env and add your OPENAI_API_KEY

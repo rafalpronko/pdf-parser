@@ -5,6 +5,32 @@ Wszystkie istotne zmiany w projekcie będą dokumentowane w tym pliku.
 Format bazuje na [Keep a Changelog](https://keepachangelog.com/pl/1.0.0/),
 a projekt stosuje [Semantic Versioning](https://semver.org/lang/pl/).
 
+## [1.3.3] - 2026-09-30
+
+### Zmieniono
+- **Wersja projektu**: 1.3.2 -> 1.3.3
+- **Powrot do NumPy 2.x**: usuniety opcjonalny extra `mineru` z `pyproject.toml`. uv rozwiazuje extras razem z baza, wiec extra przypinal numpy 1.26.x dla wszystkich instalacji na Pythonie 3.11/3.12. `uv.lock` znowu zawiera tylko numpy 2.3.5 (zaleznosci takie jak w 1.3.1)
+- MinerU instaluje sie recznie (poza lockiem): `uv pip install "magic-pdf[cpu]==0.6.1" "numpy<2" setuptools` — opis w README i w komunikacie `ImportError` parsera. Kolejne `uv sync` przywraca numpy 2.x i usuwa te pakiety
+- Usuniete testy sprawdzajace extra `mineru` w `pyproject.toml`/`uv.lock`
+
+## [1.3.2] - 2026-09-29
+
+### Bezpieczenstwo
+- **Path traversal w serwowaniu frontendu (SPA)**: catch-all route w `app/main.py` skladal sciezke przez `os.path.join` bez sprawdzenia, czy wynik zostaje w katalogu `app/static` — `GET //proc/self/environ` lub `/..%2f..%2fetc/passwd` zwracaly dowolny plik z serwera (w tym zmienne srodowiskowe z `OPENAI_API_KEY`). Nowy helper `resolve_static_path()` w pelni rozwiazuje sciezke (`..`, symlinki, petle symlinkow na Pythonie < 3.13) i serwuje plik tylko, gdy lezy wewnatrz rootu; wszystko inne dostaje 404. Rejestracja tras wydzielona do `register_spa_routes()` (testowalna bez buildu frontendu)
+
+### Naprawiono
+- **Puste cytowania po rerankingu (regresja z 1.3.1)**: `CrossEncoderReranker.rerank()` tworzyl nowy `SearchResult` bez `doc_id`, `page` i `chunk_index`, wiec przy domyslnej konfiguracji (reranking wlaczony) kazde zrodlo mialo pusty `doc_id`/`filename` i strone 0, a LLM dostawal "Page 0" w kontekscie. Reranker kopiuje teraz wynik przez `dataclasses.replace()` i zmienia tylko `score` i `metadata`
+- **Osobny, nieaktualny indeks BM25 w QueryService**: `QueryService` tworzyl i ladowal wlasny `BM25Index`, niezalezny od indeksu `DocumentService`. Nowe dokumenty byly niewidoczne dla keyword search do restartu, a usuniete dokumenty nadal trafialy do kontekstu LLM i cytowan. Oba serwisy wspoldziela teraz jeden indeks (jawnie w `lifespan()` oraz domyslnie z `document_service.bm25_index`); `QueryService` laduje indeks z dysku tylko, gdy tworzy go sam
+- **Parser MinerU zwracal pusty dokument**: `RAGAnythingParser` czytal plaska liste z `pipe_mk_uni_format()` tak, jakby byla lista stron z `para_blocks`, wiec kazdy PDF dawal 0 blokow tekstu, a upload konczyl sie bledem "Cannot add empty embeddings list". Konwersja korzysta teraz z `pipe.pdf_mid_data["pdf_info"]` (numery stron z `page_idx`, tytuly, rownania, obrazy i tabele z podpisami/przypisami); naprawiona tez podwojna sciezka `images/images/`, przez ktora gubione byly wszystkie obrazy
+- **Brak zaleznosci MinerU**: `magic-pdf` nie byl zadeklarowany, a podpowiedz `mineru[core]` wskazywala zly pakiet. Nowy opcjonalny extra `mineru` (`magic-pdf[cpu]==0.6.1`, Python < 3.13) — instalacja: `uv sync --extra dev --extra mineru`. `SystemExit` z magic-pdf przy bledzie importu modeli nie zabija juz serwera
+
+### Zmieniono
+- **Wersja projektu**: 1.3.1 -> 1.3.2
+- `uv.lock`: na Pythonie 3.11/3.12 numpy przypiety do 1.26.x dla wszystkich instalacji (paddleocr/imgaug z extra `mineru` nie dzialaja z NumPy 2; uv rozwiazuje extras razem z baza). Na Pythonie >= 3.13 bez zmian (numpy 2.3.x)
+- `QueryService` nie wola juz `load()` na jawnie przekazanym `bm25_index` — za zaladowanie indeksu odpowiada jego wlasciciel
+- Testy MinerU w `tests/test_parser_properties.py` sa pomijane, gdy `magic_pdf` nie jest zainstalowany
+- Nowe testy regresyjne: `tests/test_spa_static_files.py`, `tests/test_query_citations.py`, `tests/test_shared_bm25_index.py`, `tests/test_rag_anything_parser.py` oraz rozszerzone `tests/retrieval/test_reranker.py`
+
 ## [1.3.1] - 2026-02-25
 
 ### Bezpieczenstwo

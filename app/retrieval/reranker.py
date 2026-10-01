@@ -1,6 +1,7 @@
 """Cross-encoder reranker for improving retrieval relevance."""
 
 import logging
+from dataclasses import replace
 
 from app.models.search import SearchResult
 
@@ -127,10 +128,10 @@ class CrossEncoderReranker:
         # Update chunks with reranking scores
         reranked_chunks = []
         for chunk, score in zip(chunks, normalized_scores):
-            # Create new result with reranking score
-            reranked = SearchResult(
-                chunk_id=chunk.chunk_id,
-                content=chunk.content,
+            # Copy the result so doc_id, page, chunk_index and any other
+            # field survive reranking; only score and metadata change.
+            reranked = replace(
+                chunk,
                 score=score,
                 metadata={
                     **chunk.metadata,

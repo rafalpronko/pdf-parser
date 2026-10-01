@@ -4,6 +4,7 @@ import os
 import uuid
 from contextlib import asynccontextmanager
 from datetime import UTC, datetime
+from pathlib import Path
 
 from fastapi import FastAPI, File, HTTPException, Request, UploadFile, status
 from fastapi.exceptions import RequestValidationError
@@ -43,9 +44,13 @@ async def lifespan(app: FastAPI):  # noqa: ARG001
         f"Configuration: chunk_size={settings.chunk_size}, chunk_overlap={settings.chunk_overlap}"
     )
 
-    # Initialize services
+    # Initialize services (sharing one BM25 index so uploads/deletes are
+    # immediately visible to keyword search)
     document_service = DocumentService()
-    query_service = QueryService(document_service=document_service)
+    query_service = QueryService(
+        document_service=document_service,
+        bm25_index=document_service.bm25_index,
+    )
 
     logger.info("PDF RAG System started successfully")
 
@@ -525,13 +530,54 @@ async def query_knowledge_base(
 
 
 # Serve React Frontend (SPA)
-# This must be placed after API routes to avoid shadowing them
-static_dir = os.path.join(os.path.dirname(__file__), "static")
+def resolve_static_path(static_root: Path, request_path: str) -> Path | None:
+    """Resolve a request path to a location contained in the static root.
 
-if os.path.exists(static_dir):
+    The candidate is fully resolved (``..`` segments collapsed, symlinks followed)
+    before the containment check, so absolute paths, encoded dot-dot segments
+    and symlinks pointing outside the root are all rejected.
+
+    Args:
+        static_root: Already resolved static root directory
+        request_path: Untrusted, URL-decoded path taken from the request
+
+    Returns:
+        Resolved path inside ``static_root`` (it may not exist), or None if the
+        path escapes the root or cannot be resolved (e.g. embedded NUL byte)
+    """
+    try:
+        candidate = (static_root / request_path).resolve()
+        # Before Python 3.13, resolve() stops at a symlink loop and collapses the
+        # remaining ".." segments lexically, which can leave an outward symlink
+        # unresolved (e.g. "loop/../leak.txt"). A fully resolved path is a fixed
+        # point of resolve(), so anything else is rejected.
+        if candidate.resolve() != candidate:
+            return None
+    except (OSError, ValueError, RuntimeError):
+        # ValueError: embedded NUL byte; RuntimeError: symlink loop (Python < 3.13)
+        return None
+
+    if not candidate.is_relative_to(static_root):
+        return None
+
+    return candidate
+
+
+def register_spa_routes(app: FastAPI, static_dir: str | Path) -> None:
+    """Register routes serving the built React frontend (SPA) from ``static_dir``.
+
+    Must be called after all API routes are registered so the catch-all route
+    does not shadow them.
+
+    Args:
+        app: FastAPI application to register the routes on
+        static_dir: Directory containing the frontend build (index.html etc.)
+    """
+    static_root = Path(static_dir).resolve()
+
     # Mount static assets directory explicitly if it exists (React usually puts css/js here)
-    static_assets_dir = os.path.join(static_dir, "static")
-    if os.path.exists(static_assets_dir):
+    static_assets_dir = static_root / "static"
+    if static_assets_dir.exists():
         app.mount("/static", StaticFiles(directory=static_assets_dir), name="static_assets")
 
     # Catch-all route for SPA
@@ -541,15 +587,31 @@ if os.path.exists(static_dir):
         if full_path.startswith("api/"):
             raise HTTPException(status_code=404, detail="Not Found")
 
+        # Never serve anything outside the static root (path traversal protection)
+        file_path = resolve_static_path(static_root, full_path)
+        if file_path is None:
+            logger.warning(f"Rejected static file request outside frontend root: {full_path!r}")
+            raise HTTPException(status_code=404, detail="Not Found")
+
         # Check if specific file exists in static root (e.g. favicon.ico, manifest.json)
-        file_path = os.path.join(static_dir, full_path)
-        if os.path.exists(file_path) and os.path.isfile(file_path):
+        try:
+            is_file = file_path.is_file()
+        except OSError:
+            is_file = False
+        if is_file:
             return FileResponse(file_path)
 
         # Fallback to index.html for React Router paths
-        index_path = os.path.join(static_dir, "index.html")
-        if os.path.exists(index_path):
+        index_path = static_root / "index.html"
+        if index_path.is_file():
             return FileResponse(index_path)
 
         # If no index.html (e.g. locally without build), return 404
         raise HTTPException(status_code=404, detail="Frontend not found (build required)")
+
+
+# This must be placed after API routes to avoid shadowing them
+static_dir = os.path.join(os.path.dirname(__file__), "static")
+
+if os.path.exists(static_dir):
+    register_spa_routes(app, static_dir)

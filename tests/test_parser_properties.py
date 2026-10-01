@@ -8,6 +8,7 @@ Properties tested:
 - Property 8: Partial failure resilience
 """
 
+import importlib.util
 import tempfile
 from pathlib import Path
 
@@ -16,10 +17,17 @@ import pytest
 from app.models.parsing import ParsedDocument
 from app.parsers.rag_anything_parser import RAGAnythingParser
 
+# Every test here builds a real RAGAnythingParser, which needs MinerU (magic-pdf).
+# Hermetic parser tests live in tests/test_rag_anything_parser.py.
+pytestmark = pytest.mark.skipif(
+    importlib.util.find_spec("magic_pdf") is None,
+    reason="MinerU (magic-pdf) not installed; see README (manual MinerU install)",
+)
+
 
 # Feature: pdf-rag-system, Property 5: Text extraction preserves content
 @pytest.mark.xfail(
-    reason="Pre-existing: numpy 2.0 removed np.sctypes, incompatible with imgaug/paddleocr",
+    reason="Needs network: PaddleOCR downloads its models from paddleocr.bj.bcebos.com on first use",
     strict=False,
 )
 def test_property_5_text_extraction_non_empty():
@@ -59,7 +67,7 @@ def test_property_5_text_extraction_non_empty():
 
 # Feature: pdf-rag-system, Property 6: Image extraction completeness
 @pytest.mark.xfail(
-    reason="Pre-existing: numpy 2.0 removed np.sctypes, incompatible with imgaug/paddleocr",
+    reason="Needs network: PaddleOCR downloads its models from paddleocr.bj.bcebos.com on first use",
     strict=False,
 )
 def test_property_6_image_metadata_valid():
@@ -94,7 +102,7 @@ def test_property_6_image_metadata_valid():
 
 # Feature: pdf-rag-system, Property 7: Table structure preservation
 @pytest.mark.xfail(
-    reason="Pre-existing: numpy 2.0 removed np.sctypes, incompatible with imgaug/paddleocr",
+    reason="Needs network: PaddleOCR downloads its models from paddleocr.bj.bcebos.com on first use",
     strict=False,
 )
 def test_property_7_table_structure():
@@ -156,7 +164,7 @@ def test_property_8_parser_handles_errors():
 
 
 @pytest.mark.xfail(
-    reason="Pre-existing: numpy 2.0 removed np.sctypes, incompatible with imgaug/paddleocr",
+    reason="Needs network: PaddleOCR downloads its models from paddleocr.bj.bcebos.com on first use",
     strict=False,
 )
 def test_property_5_bbox_coordinates_valid():
@@ -182,7 +190,7 @@ def test_property_5_bbox_coordinates_valid():
 
 
 @pytest.mark.xfail(
-    reason="Pre-existing: numpy 2.0 removed np.sctypes, incompatible with imgaug/paddleocr",
+    reason="Needs network: PaddleOCR downloads its models from paddleocr.bj.bcebos.com on first use",
     strict=False,
 )
 def test_property_6_charts_have_valid_metadata():
